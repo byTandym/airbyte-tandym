@@ -1,0 +1,98 @@
+{
+"$schema": "http://json-schema.org/draft-07/schema#",
+"type": ["null", "object"], 
+    "properties": {
+        "customer_id": {
+            "type": ["null", "string"]
+        },
+        "customer_parent_id": {
+            "type": ["null", "string"]
+        },
+        "customer_type": {
+            "type": ["null", "string"]
+        },
+        "title": {
+            "type": ["null", "string"]
+        },
+        "name_prefix": {
+            "type": ["null", "string"]
+        },
+        "name_first": {
+            "type": ["null", "string"]
+        },
+        "name_middle": {
+            "type": ["null", "string"]
+        },
+        "name_last": {
+            "type": ["null", "string"]
+        },
+        "name_suffix": {
+            "type": ["null", "string"]
+        },
+        "phone_number": {
+            "type": ["null", "string"]
+        },
+        "address_line_one": {
+            "type": ["null", "string"]
+        },
+        "address_line_two": {
+            "type": ["null", "string"]
+        },
+        "address_city": {
+            "type": ["null", "string"]
+        },
+        "address_state": {
+            "type": ["null", "string"]
+        },
+        "address_zip": {
+            "type": ["null", "string"]
+        },
+        "address_country_code": {
+            "type": ["null", "string"]
+        },
+        "ssn": {
+            "type": ["null", "string"]
+        },
+        "international_customer_id": {
+            "type": ["null", "string"]
+        },
+        "email": {
+            "type": ["null", "string"]
+        },
+        "date_of_birth": {
+            "type": ["null", "string"]
+        },
+        "business_details": {
+            "type": ["null", "string"]
+        },
+        "passport": {
+            "type": ["null", "object"],
+            "properties": {
+                "number": {
+                    "type": ["null", "string"]
+                },
+                "country": {
+                    "type": ["null", "string"]
+                }
+            }
+        },
+        "verification_status": {
+            "type": ["null", "string"]
+        },
+        "is_active": {
+            "type": ["null", "string"]
+        },
+        "products": {
+            "type": ["null", "string"]
+        },
+        "customer_balances": {
+            "type": ["null", "string"]
+        },
+        "customer_entity_counts": {
+            "type": ["null", "string"]
+        },
+        "updated_at": {
+            "type": ["null", "string"]
+        }
+    }
+}
