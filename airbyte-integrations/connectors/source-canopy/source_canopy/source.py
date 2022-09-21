@@ -66,7 +66,6 @@ class Customers(CanopyStream):
 class Accounts(CanopyStream):
 
     primary_key = "account_id"
-    use_cache = True
 
     def path(
         self, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
