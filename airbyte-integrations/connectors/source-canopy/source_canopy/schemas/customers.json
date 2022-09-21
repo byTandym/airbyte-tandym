@@ -80,7 +80,7 @@
             "type": ["null", "string"]
         },
         "is_active": {
-            "type": ["null", "string"]
+            "type": ["null", "boolean"]
         },
         "products": {
             "type": ["null", "string"]

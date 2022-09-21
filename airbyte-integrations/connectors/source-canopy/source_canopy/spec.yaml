@@ -10,4 +10,5 @@ connectionSpecification:
       title: Auth Token
       type: string
       description: Exchange your client id and secret for an auth token.
+      airbyte_secret: true
       order: 0

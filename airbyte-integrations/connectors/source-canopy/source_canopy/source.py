@@ -1,7 +1,6 @@
 #
 # Copyright (c) 2022 Airbyte, Inc., all rights reserved.
 #
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -36,22 +35,18 @@ class CanopyStream(HttpStream, ABC):
     ) -> MutableMapping[str, Any]:
         
         params = super().request_params(stream_state=stream_state, next_page_token=next_page_token, **kwargs)
-        params["limit"] = 10
+        params["limit"] = 100
 
         if next_page_token:
             params.update(**next_page_token)
         return params
 
     def read_slices_from_records(self, stream_class: Type[CanopyStream], slice_field: str) -> Iterable[Optional[Mapping[str, Any]]]:
-        """
-        General function for getting parent stream (which should be passed through `stream_class`) slice.
-        Generates dicts with `account_id` of parent streams.
-        """
         stream = stream_class(authenticator=self.authenticator)
         stream_slices = stream.stream_slices(sync_mode=SyncMode.full_refresh)
         for stream_slice in stream_slices:
             for record in stream.read_records(sync_mode=SyncMode.full_refresh, stream_slice=stream_slice):
-                yield {slice_field: record["account_id"]}
+                yield {slice_field: record["customer_id"]}
 
 class Customers(CanopyStream):
 
@@ -71,6 +66,7 @@ class Customers(CanopyStream):
 class Accounts(CanopyStream):
 
     primary_key = "account_id"
+    use_cache = True
 
     def path(
         self, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
@@ -86,7 +82,10 @@ class AccountRelatedStream(CanopyStream, ABC):
     def stream_slices(
         self, sync_mode: SyncMode, cursor_field: List[str] = None, stream_state: Mapping[str, Any] = None
     ) -> Iterable[Optional[Mapping[str, Any]]]:
-        yield from self.read_slices_from_records(stream_class=Accounts, slice_field="account_id")
+        accounts_stream = Accounts(authenticator=self.authenticator)
+        for record in accounts_stream.read_records(sync_mode=SyncMode.full_refresh):
+            yield {"account_id": record["account"]["account_id"]}
+
 
 class LineItems(AccountRelatedStream):
 
@@ -94,23 +93,17 @@ class LineItems(AccountRelatedStream):
 
     def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
         account_id = stream_slice["account_id"]
-        return f"customers/{account_id}/line_items"
+        return f"accounts/{account_id}/line_items"
 
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
-        #return [response.json()]
         for record in response.json()["results"]:
             yield record
-
 
 # Source
 class SourceCanopy(AbstractSource):
    
     @staticmethod
     def _get_authenticator(config: dict):
-        """
-        Verifies that the information for setting the header has been set, and returns a class
-        which overloads that standard authentication to include additional headers that are required by Webflow.
-        """
         auth_token = config.get("auth_token", None)
         if not auth_token:
             raise Exception("Config validation error: 'auth_token' is a required property")
@@ -119,14 +112,6 @@ class SourceCanopy(AbstractSource):
         return auth
     
     def check_connection(self, logger, config) -> Tuple[bool, any]:
-        """
-        See https://github.com/airbytehq/airbyte/blob/master/airbyte-integrations/connectors/source-stripe/source_stripe/source.py#L232
-        for an example.
-
-        :param config:  the user-input config object conforming to the connector's spec.yaml
-        :param logger:  logger object
-        :return Tuple[bool, any]: (True, None) if the input config can be used to connect to the API successfully, (False, error) otherwise.
-        """
         try:
             auth = self._get_authenticator(config)
             stream = Customers(authenticator=auth)
@@ -138,11 +123,7 @@ class SourceCanopy(AbstractSource):
             return False, e
 
     def streams(self, config: Mapping[str, Any]) -> List[Stream]:
-        """
-        :param config: A Mapping of the user input configuration as defined in the connector spec.
-        """
         args = {"authenticator": self._get_authenticator(config)}
-        #auth = self._get_authenticator(config)
         return [
             Customers(**args),
             Accounts(**args),
