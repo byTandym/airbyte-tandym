@@ -4,11 +4,17 @@ connectionSpecification:
   title: Canopy Spec
   type: object
   required:
-    - auth_token
+    - client_id
+    - client_secret
   properties:
-    auth_token:
-      title: Auth Token
+    client_id:
+      title: Client ID
       type: string
-      description: Exchange your client id and secret for an auth token.
-      airbyte_secret: true
+      description: Add your client ID for M2M connections with Canopy Servicing.
       order: 0
+    client_secret:
+      title: Client Secret
+      type: string
+      description: Add your corresponding client secret.
+      airbyte_secret: true
+      order: 1

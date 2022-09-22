@@ -103,7 +103,14 @@ class SourceCanopy(AbstractSource):
    
     @staticmethod
     def _get_authenticator(config: dict):
-        auth_token = config.get("auth_token", None)
+        
+        url = 'https://tandym-api.us.canopyservicing.com/auth/token'
+        post_obj = {'client_id': config.get("client_id", None), 'client_secret': config.get("client_secret", None)}
+        
+        response = requests.post(url, json = post_obj)
+        auth_token = response.json()["access_token"]
+
+        #auth_token = config.get("auth_token", None)
         if not auth_token:
             raise Exception("Config validation error: 'auth_token' is a required property")
 
