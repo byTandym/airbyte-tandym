@@ -41,13 +41,6 @@ class CanopyStream(HttpStream, ABC):
             params.update(**next_page_token)
         return params
 
-    def read_slices_from_records(self, stream_class: Type[CanopyStream], slice_field: str) -> Iterable[Optional[Mapping[str, Any]]]:
-        stream = stream_class(authenticator=self.authenticator)
-        stream_slices = stream.stream_slices(sync_mode=SyncMode.full_refresh)
-        for stream_slice in stream_slices:
-            for record in stream.read_records(sync_mode=SyncMode.full_refresh, stream_slice=stream_slice):
-                yield {slice_field: record["customer_id"]}
-
 class Customers(CanopyStream):
 
     primary_key = "customer_id"
@@ -60,9 +53,6 @@ class Customers(CanopyStream):
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
         response_json = response.json()
         yield from response_json["results"]
-        #for record in response.json()["results"]:
-        #    yield record
-
 class Accounts(CanopyStream):
 
     primary_key = "account_id"
@@ -75,7 +65,6 @@ class Accounts(CanopyStream):
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
         for record in response.json()["results"]:
             yield record
-
 class AccountRelatedStream(CanopyStream, ABC):    
     
     def stream_slices(
@@ -84,11 +73,9 @@ class AccountRelatedStream(CanopyStream, ABC):
         accounts_stream = Accounts(authenticator=self.authenticator)
         for record in accounts_stream.read_records(sync_mode=SyncMode.full_refresh):
             yield {"account_id": record["account"]["account_id"]}
-
-
 class LineItems(AccountRelatedStream):
 
-    primary_key = "account_id"
+    primary_key = "line_item_id"
 
     def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
         account_id = stream_slice["account_id"]
@@ -97,6 +84,20 @@ class LineItems(AccountRelatedStream):
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
         for record in response.json()["results"]:
             yield record
+class StatementsList(AccountRelatedStream):
+
+    primary_key = "statement_id"
+
+    def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
+        account_id = stream_slice["account_id"]
+        return f"accounts/{account_id}/statements/list"
+
+    def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
+        for record in response.json():
+            yield record
+
+    def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
+        return None
 
 # Source
 class SourceCanopy(AbstractSource):
@@ -107,8 +108,7 @@ class SourceCanopy(AbstractSource):
         url = 'https://tandym-api.us.canopyservicing.com/auth/token'
         post_obj = {'client_id': config.get("client_id", None), 'client_secret': config.get("client_secret", None)}
         
-        response = requests.post(url, json = post_obj)
-        auth_token = response.json()["access_token"]
+        auth_token = requests.post(url, json = post_obj).json()["access_token"]
 
         #auth_token = config.get("auth_token", None)
         if not auth_token:
@@ -133,4 +133,5 @@ class SourceCanopy(AbstractSource):
         return [
             Customers(**args),
             Accounts(**args),
-            LineItems(**args)]
+            LineItems(**args),
+            StatementsList(**args)]

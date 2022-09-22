@@ -26,6 +26,15 @@
         },
         "sync_mode": "full_refresh",
         "destination_sync_mode": "overwrite"
+      },
+      {
+        "stream": {
+          "name": "statements_list",
+          "json_schema": {
+          }
+        },
+        "sync_mode": "full_refresh",
+        "destination_sync_mode": "overwrite"
       }
     ]
    }
