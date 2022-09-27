@@ -10,7 +10,7 @@ from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional,
 import requests
 from airbyte_cdk.sources import AbstractSource
 from airbyte_cdk.sources.streams import Stream
-from airbyte_cdk.sources.streams.http import HttpStream
+from airbyte_cdk.sources.streams.http import HttpStream, HttpSubStream
 from airbyte_cdk.models import SyncMode
 from airbyte_cdk.sources.streams.http.auth import TokenAuthenticator
 
@@ -30,6 +30,10 @@ class CanopyStream(HttpStream, ABC):
         else:
             return None
 
+    def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
+        response_json = response.json()
+        yield from response_json["results"]
+
     def request_params(
         self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None, **kwargs
     ) -> MutableMapping[str, Any]:
@@ -40,7 +44,6 @@ class CanopyStream(HttpStream, ABC):
         if next_page_token:
             params.update(**next_page_token)
         return params
-
 class Customers(CanopyStream):
 
     primary_key = "customer_id"
@@ -49,10 +52,6 @@ class Customers(CanopyStream):
         self, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
     ) -> str:
         return "customers"
-    
-    def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
-        response_json = response.json()
-        yield from response_json["results"]
 class Accounts(CanopyStream):
 
     primary_key = "account_id"
@@ -61,10 +60,6 @@ class Accounts(CanopyStream):
         self, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
     ) -> str:
         return "customers/accounts"
-    
-    def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
-        for record in response.json()["results"]:
-            yield record
 class AccountRelatedStream(CanopyStream, ABC):    
     
     def stream_slices(
@@ -80,10 +75,6 @@ class LineItems(AccountRelatedStream):
     def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
         account_id = stream_slice["account_id"]
         return f"accounts/{account_id}/line_items"
-
-    def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
-        for record in response.json()["results"]:
-            yield record
 class StatementsList(AccountRelatedStream):
 
     primary_key = "statement_id"
@@ -98,7 +89,29 @@ class StatementsList(AccountRelatedStream):
 
     def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
         return None
+class StatementRelatedStream(StatementsList, ABC):    
+    
+    def stream_slices(
+        self, sync_mode: SyncMode, cursor_field: List[str] = None, stream_state: Mapping[str, Any] = None
+    ) -> Iterable[Optional[Mapping[str, Any]]]:
+        statements_stream = StatementsList(authenticator=self.authenticator)
+        for record in statements_stream.read_records(sync_mode=SyncMode.full_refresh):
+            yield {"account_id": record["account_id"],"statement_id":record["statement_id"]}
+class StatementsDetail(StatementRelatedStream):
 
+    primary_key = "statement_id"
+
+    def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
+        account_id = stream_slice["account_id"]
+        statement_id = stream_slice["statement_id"]
+        return f"accounts/{account_id}/statements/{statement_id}"
+
+    def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
+        for record in response.json():
+            yield record
+
+    def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
+        return None
 # Source
 class SourceCanopy(AbstractSource):
    
@@ -134,4 +147,5 @@ class SourceCanopy(AbstractSource):
             Customers(**args),
             Accounts(**args),
             LineItems(**args),
-            StatementsList(**args)]
+            StatementsList(**args),
+            StatementsDetail(**args)]
