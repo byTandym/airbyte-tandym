@@ -44,6 +44,17 @@ class CanopyStream(HttpStream, ABC):
         if next_page_token:
             params.update(**next_page_token)
         return params
+
+    def read_slices_from_records(self, stream_class: Type[CanopyStream], slice_field: str, slice_field_two: str) -> Iterable[Optional[Mapping[str, Any]]]:
+        """
+        General function for getting parent stream (which should be passed through `stream_class`) slice.
+        Generates dicts with `gid` of parent streams.
+        """
+        stream = stream_class(authenticator=self.authenticator)
+        stream_slices = stream.stream_slices(sync_mode=SyncMode.full_refresh)
+        for stream_slice in stream_slices:
+            for record in stream.read_records(sync_mode=SyncMode.full_refresh, stream_slice=stream_slice):
+                yield {slice_field: record["account_id"], slice_field_two: record["statement_id"]}
 class Customers(CanopyStream):
 
     primary_key = "customer_id"
@@ -89,26 +100,26 @@ class StatementsList(AccountRelatedStream):
 
     def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
         return None
-class StatementRelatedStream(StatementsList, ABC):    
+class StatementsRelatedStream(CanopyStream):
     
     def stream_slices(
         self, sync_mode: SyncMode, cursor_field: List[str] = None, stream_state: Mapping[str, Any] = None
     ) -> Iterable[Optional[Mapping[str, Any]]]:
-        statements_stream = StatementsList(authenticator=self.authenticator)
-        for record in statements_stream.read_records(sync_mode=SyncMode.full_refresh):
-            yield {"account_id": record["account_id"],"statement_id":record["statement_id"]}
-class StatementsDetail(StatementRelatedStream):
+        yield from self.read_slices_from_records(stream_class=StatementsList, slice_field="account_id", slice_field_two="statement_id")  
+
+class StatementsDetail(StatementsRelatedStream):
 
     primary_key = "statement_id"
 
     def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
         account_id = stream_slice["account_id"]
         statement_id = stream_slice["statement_id"]
+        #return f"accounts/86ce6fe0-e69e-11ec-832a-a38fbd725495/statements/3"
         return f"accounts/{account_id}/statements/{statement_id}"
 
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
-        for record in response.json():
-            yield record
+        response_json=response.json()
+        yield response_json
 
     def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
         return None
