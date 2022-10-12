@@ -2,6 +2,7 @@
 # Copyright (c) 2022 Airbyte, Inc., all rights reserved.
 #
 
+from functools import cache
 from typing import Any, Iterable, List, Mapping, MutableMapping, Optional
 
 import requests
@@ -66,7 +67,7 @@ class Engage(IncrementalMixpanelStream):
     primary_key: str = "distinct_id"
     page_size: int = 1000  # min 100
     _total: Any = None
-    cursor_field = None
+    cursor_field = "last_seen"
 
     @property
     def source_defined_cursor(self) -> bool:
@@ -165,6 +166,7 @@ class Engage(IncrementalMixpanelStream):
             if not item_cursor or not state_cursor or item_cursor >= state_cursor:
                 yield item
 
+    @cache
     def get_json_schema(self) -> Mapping[str, Any]:
         """
         :return: A dict of the JSON schema representing this stream.
