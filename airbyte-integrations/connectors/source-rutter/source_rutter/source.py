@@ -5,8 +5,8 @@
 from __future__ import annotations
 
 from abc import ABC
-import base64
-from typing import Any, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Dict
+import base64, json
+from typing import Any, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Dict, Type
 
 import requests
 from airbyte_cdk.sources import AbstractSource
@@ -32,6 +32,13 @@ class RutterStream(HttpStream, ABC):
         response_json = response.json()
         yield from response_json
 
+    def read_slices_from_records(self, stream_class: Type[RutterStream], slice_field: str) -> Iterable[Optional[Mapping[str, Any]]]:
+        stream = stream_class(authenticator=self.authenticator)
+        stream_slices = stream.stream_slices(sync_mode=SyncMode.full_refresh)
+        for stream_slice in stream_slices:
+            for record in stream.read_records(sync_mode=SyncMode.full_refresh, stream_slice=stream_slice):
+                yield {slice_field: record["access_token"]}
+
 class Connections(RutterStream):
 
     primary_key = "id"
@@ -47,12 +54,17 @@ class Connections(RutterStream):
 
 class ConnectionsRelatedStream(RutterStream, ABC):    
 
+#    def stream_slices(
+#        self, sync_mode: SyncMode, cursor_field: List[str] = None, stream_state: Mapping[str, Any] = None
+#    ) -> Iterable[Optional[Mapping[str, Any]]]:
+#        stream = Connections(authenticator=self.authenticator)
+#        for record in stream.read_records(sync_mode=SyncMode.full_refresh):
+#            yield {"access_token": record["access_token"]}
+
     def stream_slices(
         self, sync_mode: SyncMode, cursor_field: List[str] = None, stream_state: Mapping[str, Any] = None
     ) -> Iterable[Optional[Mapping[str, Any]]]:
-        stream = Connections(authenticator=self.authenticator)
-        for record in stream.read_records(sync_mode=SyncMode.full_refresh):
-            yield {"access_token": record["access_token"]}
+        yield from self.read_slices_from_records(stream_class=Connections, slice_field="access_token")
 
 class Orders(ConnectionsRelatedStream):
 
@@ -79,10 +91,16 @@ class Orders(ConnectionsRelatedStream):
         params = {"access_token":stream_slice["access_token"], "cursor":next_page_token, "expand":"transactions"}
         return params
 
-    def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
+    def parse_response(self, response: requests.Response, stream_slice: Mapping[str, any] = None, **kwargs) -> Iterable[Mapping]:
         response_json = response.json()
-        yield from response_json.get("orders", [])
-
+        data = response_json.get("orders", [])
+        connection = response_json['connection']
+        connection['connection_id'] = connection['id']
+        del connection['id']        
+        
+        for id in data:
+            id.update(connection)
+        yield from data
 class Customers(ConnectionsRelatedStream):
 
     primary_key = "id"
@@ -110,7 +128,14 @@ class Customers(ConnectionsRelatedStream):
 
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
         response_json = response.json()
-        yield from response_json.get("customers", [])
+        data = response_json.get("customers", [])
+        connection = response_json['connection']
+        connection['connection_id'] = connection['id']
+        del connection['id']        
+        
+        for id in data:
+            id.update(connection)
+        yield from data
 
 class Products(ConnectionsRelatedStream):
 
@@ -137,10 +162,16 @@ class Products(ConnectionsRelatedStream):
         params = {"access_token":stream_slice["access_token"]}
         return params
 
-    def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
+    def parse_response(self, response: requests.Response,stream_slice: Mapping[str, any] = None, **kwargs) -> Iterable[Mapping]:
         response_json = response.json()
-        yield from response_json.get("products", [])
-
+        data = response_json.get("products", [])
+        connection = response_json['connection']
+        connection['connection_id'] = connection['id']
+        del connection['id']        
+        
+        for id in data:
+            id.update(connection)
+        yield from data
 class SourceRutter(AbstractSource):
 
     @staticmethod
@@ -167,5 +198,3 @@ class SourceRutter(AbstractSource):
             Products(**full_refresh_stream_kwargs),
         ]        
         return streams
-
-
