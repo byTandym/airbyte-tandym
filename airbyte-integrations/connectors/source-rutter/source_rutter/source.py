@@ -54,13 +54,6 @@ class Connections(RutterStream):
 
 class ConnectionsRelatedStream(RutterStream, ABC):    
 
-#    def stream_slices(
-#        self, sync_mode: SyncMode, cursor_field: List[str] = None, stream_state: Mapping[str, Any] = None
-#    ) -> Iterable[Optional[Mapping[str, Any]]]:
-#        stream = Connections(authenticator=self.authenticator)
-#        for record in stream.read_records(sync_mode=SyncMode.full_refresh):
-#            yield {"access_token": record["access_token"]}
-
     def stream_slices(
         self, sync_mode: SyncMode, cursor_field: List[str] = None, stream_state: Mapping[str, Any] = None
     ) -> Iterable[Optional[Mapping[str, Any]]]:
@@ -123,7 +116,7 @@ class Customers(ConnectionsRelatedStream):
         self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, any] = None, next_page_token: Mapping[str, Any] = None, **kwargs
     ) -> MutableMapping[str, Any]:
         
-        params = {"access_token":stream_slice["access_token"]}
+        params = {"access_token":stream_slice["access_token"], "cursor":next_page_token}
         return params
 
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
@@ -159,7 +152,7 @@ class Products(ConnectionsRelatedStream):
         self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, any] = None, next_page_token: Mapping[str, Any] = None, **kwargs
     ) -> MutableMapping[str, Any]:
         
-        params = {"access_token":stream_slice["access_token"]}
+        params = {"access_token":stream_slice["access_token"],"cursor":next_page_token}
         return params
 
     def parse_response(self, response: requests.Response,stream_slice: Mapping[str, any] = None, **kwargs) -> Iterable[Mapping]:
