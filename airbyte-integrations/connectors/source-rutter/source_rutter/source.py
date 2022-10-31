@@ -7,7 +7,7 @@ from __future__ import annotations
 from abc import ABC
 import datetime
 import pendulum
-from typing import Any, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
+from typing import Any, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Type, Union, Dict
 
 import requests
 from airbyte_cdk.sources import AbstractSource
@@ -20,6 +20,7 @@ from airbyte_cdk.models import SyncMode
 class RutterStream(HttpStream, ABC):
     url_base = "https://production.rutterapi.com/"
     primary_key = "id"
+    filter_field = "updated_at_min"
 
     def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
         return None
@@ -40,25 +41,41 @@ class RutterStream(HttpStream, ABC):
             for record in stream.read_records(sync_mode=SyncMode.full_refresh, stream_slice=stream_slice):
                 yield {slice_field: record["access_token"]}
 
+    @property
+    def default_filter_field_value(self) -> Union[int, str]:
+        # certain streams are using `since_id` field as `filter_field`, which requires to use `int` type,
+        # but many other use `str` values for this, we determine what to use based on `filter_field` value
+        # by default, we use the user defined `Start Date` as initial value, or 0 for `id`-dependent streams.
+        return 0 if self.filter_field == "since_id" else self.config["start_date"]
+
 class IncrementalRutterStream(RutterStream, ABC):
     cursor_field = "updated_at"
+    def request_params(self, stream_state: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None, **kwargs):
+        params = super().request_params(stream_state=stream_state, next_page_token=next_page_token, **kwargs)
+        # If there is a next page token then we should only send pagination-related parameters.
+        if not next_page_token:
+            if stream_state:
+                params[self.filter_field] = stream_state.get(self.cursor_field)
+        return params        
+        #start_time = 1666270917000
 
-    def request_params(self, stream_state: Mapping[str, Any], next_page_token: Mapping[str, Any] = None, **kwargs) -> MutableMapping[str, Any]:
-        stream_state = stream_state or {}        
-        params = super().request_params(stream_state=stream_state, **kwargs)
-        start_time = 1666270917000
-        params.update({"updated_at_min": start_time, "updated_at_max": pendulum.now().int_timestamp})
-        return params
+    @property
+    def default_state_comparison_value(self) -> Union[int, str]:
+        # certain streams are using `id` field as `cursor_field`, which requires to use `int` type,
+        # but many other use `str` values for this, we determine what to use based on `cursor_field` value
+        return 0 if self.cursor_field == "id" else ""
 
     def get_updated_state(self, current_stream_state: MutableMapping[str, Any], latest_record: Mapping[str, Any]) -> Mapping[str, Any]:
         """
         Return the latest state by comparing the cursor value in the latest record with the stream's most recent state object
         and returning an updated state object.
         """
-        latest_benchmark = latest_record.get(self.cursor_field)
-        if current_stream_state.get(self.cursor_field):
-            return {self.cursor_field: max(latest_benchmark, current_stream_state.get(self.cursor_field))}
-        return {self.cursor_field: latest_benchmark}
+        return {
+            self.cursor_field: max(
+                latest_record.get(self.cursor_field, self.default_state_comparison_value),
+                current_stream_state.get(self.cursor_field, self.default_state_comparison_value),
+            )
+        }
 class Connections(RutterStream):
     def path(
         self, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
