@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 from abc import ABC
-import base64, json
-from typing import Any, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Dict, Type
+import datetime
+import pendulum
+from typing import Any, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Type, Union
 
 import requests
 from airbyte_cdk.sources import AbstractSource
@@ -17,8 +18,8 @@ from airbyte_cdk.models import SyncMode
 
 
 class RutterStream(HttpStream, ABC):
-
     url_base = "https://production.rutterapi.com/"
+    primary_key = "id"
 
     def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
         return None
@@ -39,10 +40,26 @@ class RutterStream(HttpStream, ABC):
             for record in stream.read_records(sync_mode=SyncMode.full_refresh, stream_slice=stream_slice):
                 yield {slice_field: record["access_token"]}
 
+class IncrementalRutterStream(RutterStream, ABC):
+    cursor_field = "updated_at"
+
+    def request_params(self, stream_state: Mapping[str, Any], next_page_token: Mapping[str, Any] = None, **kwargs) -> MutableMapping[str, Any]:
+        stream_state = stream_state or {}        
+        params = super().request_params(stream_state=stream_state, **kwargs)
+        start_time = 1666270917000
+        params.update({"updated_at_min": start_time, "updated_at_max": pendulum.now().int_timestamp})
+        return params
+
+    def get_updated_state(self, current_stream_state: MutableMapping[str, Any], latest_record: Mapping[str, Any]) -> Mapping[str, Any]:
+        """
+        Return the latest state by comparing the cursor value in the latest record with the stream's most recent state object
+        and returning an updated state object.
+        """
+        latest_benchmark = latest_record.get(self.cursor_field)
+        if current_stream_state.get(self.cursor_field):
+            return {self.cursor_field: max(latest_benchmark, current_stream_state.get(self.cursor_field))}
+        return {self.cursor_field: latest_benchmark}
 class Connections(RutterStream):
-
-    primary_key = "id"
-
     def path(
         self, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
     ) -> str:
@@ -53,16 +70,12 @@ class Connections(RutterStream):
         yield from response_json.get("connections", [])
 
 class ConnectionsRelatedStream(RutterStream, ABC):    
-
     def stream_slices(
         self, sync_mode: SyncMode, cursor_field: List[str] = None, stream_state: Mapping[str, Any] = None
     ) -> Iterable[Optional[Mapping[str, Any]]]:
         yield from self.read_slices_from_records(stream_class=Connections, slice_field="access_token")
 
-class Orders(ConnectionsRelatedStream):
-
-    primary_key = "id"
-
+class Orders(ConnectionsRelatedStream, IncrementalRutterStream):
     def path(
         self, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
     ) -> str:
@@ -84,7 +97,7 @@ class Orders(ConnectionsRelatedStream):
         params = {"access_token":stream_slice["access_token"], "cursor":next_page_token, "expand":"transactions"}
         return params
 
-    def parse_response(self, response: requests.Response, stream_slice: Mapping[str, any] = None, **kwargs) -> Iterable[Mapping]:
+    def parse_response(self, response: requests.Response, stream_slice: Mapping[str, any] = None, stream_state: Mapping[str, any] = None, **kwargs) -> Iterable[Mapping]:
         response_json = response.json()
         data = response_json.get("orders", [])
         connection = response_json['connection']
@@ -95,9 +108,6 @@ class Orders(ConnectionsRelatedStream):
             id.update(connection)
         yield from data
 class Customers(ConnectionsRelatedStream):
-
-    primary_key = "id"
-
     def path(
         self, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
     ) -> str:
@@ -131,9 +141,6 @@ class Customers(ConnectionsRelatedStream):
         yield from data
 
 class Products(ConnectionsRelatedStream):
-
-    primary_key = "id"
-
     def path(
         self, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
     ) -> str:
@@ -166,7 +173,6 @@ class Products(ConnectionsRelatedStream):
             id.update(connection)
         yield from data
 class SourceRutter(AbstractSource):
-
     @staticmethod
     def _get_authenticator(config: dict):
         auth = BasicHttpAuthenticator(username=config["client_id"], password=config["client_secret"])
@@ -184,9 +190,13 @@ class SourceRutter(AbstractSource):
     def streams(self, config: Mapping[str, Any]) -> List[Stream]:
         auth = self._get_authenticator(config)
         full_refresh_stream_kwargs = {"authenticator": auth}
+        incremental_stream_kwargs = {
+            "authenticator": auth,
+#            "updated_at": config["start_date"],
+        }
         streams = [
             Connections(**full_refresh_stream_kwargs),
-            Orders(**full_refresh_stream_kwargs),
+            Orders(**incremental_stream_kwargs),
             Customers(**full_refresh_stream_kwargs),
             Products(**full_refresh_stream_kwargs),
         ]        
