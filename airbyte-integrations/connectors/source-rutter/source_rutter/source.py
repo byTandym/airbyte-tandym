@@ -10,6 +10,7 @@ import pendulum
 from typing import Any, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Type, Union, Dict
 
 import requests
+from .utils import EagerlyCachedStreamState as stream_state_cache
 from airbyte_cdk.sources import AbstractSource
 from airbyte_cdk.sources.streams import Stream
 from airbyte_cdk.sources.streams.http import HttpStream
@@ -21,14 +22,25 @@ class RutterStream(HttpStream, ABC):
     url_base = "https://production.rutterapi.com/"
     primary_key = "id"
     filter_field = "updated_at_min"
+    limit = 50
 
-    def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
-        return None
+    @staticmethod
+    def next_page_token(response: requests.Response) -> Optional[Mapping[str, Any]]:
+        next_page_token = response.json().get("next_cursor")
+        if next_page_token:
+            return next_page_token
+        else:
+            return None
 
     def request_params(
         self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, any] = None, next_page_token: Mapping[str, Any] = None, **kwargs
     ) -> MutableMapping[str, Any]:
-        return None
+        params = {"limit": self.limit}
+        if next_page_token:
+            params.update(**next_page_token)
+        else:
+            params[self.filter_field] = self.default_filter_field_value
+        return params
 
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
         response_json = response.json()
@@ -46,18 +58,14 @@ class RutterStream(HttpStream, ABC):
         # certain streams are using `since_id` field as `filter_field`, which requires to use `int` type,
         # but many other use `str` values for this, we determine what to use based on `filter_field` value
         # by default, we use the user defined `Start Date` as initial value, or 0 for `id`-dependent streams.
-        return 0 if self.filter_field == "since_id" else self.config["start_date"]
+        return 0 if self.filter_field == "since_id" else 1666270917000
 
 class IncrementalRutterStream(RutterStream, ABC):
     cursor_field = "updated_at"
-    def request_params(self, stream_state: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None, **kwargs):
-        params = super().request_params(stream_state=stream_state, next_page_token=next_page_token, **kwargs)
-        # If there is a next page token then we should only send pagination-related parameters.
-        if not next_page_token:
-            if stream_state:
-                params[self.filter_field] = stream_state.get(self.cursor_field)
-        return params        
-        #start_time = 1666270917000
+
+    @property
+    def state_checkpoint_interval(self) -> int:
+        return super().limit
 
     @property
     def default_state_comparison_value(self) -> Union[int, str]:
@@ -67,7 +75,8 @@ class IncrementalRutterStream(RutterStream, ABC):
 
     def get_updated_state(self, current_stream_state: MutableMapping[str, Any], latest_record: Mapping[str, Any]) -> Mapping[str, Any]:
         """
-        Return the latest state by comparing the cursor value in the latest record with the stream's most recent state object
+        Return the latest state by comparing the cursor value 
+        in the latest record with the stream's most recent state object
         and returning an updated state object.
         """
         return {
@@ -76,6 +85,15 @@ class IncrementalRutterStream(RutterStream, ABC):
                 current_stream_state.get(self.cursor_field, self.default_state_comparison_value),
             )
         }
+
+    @stream_state_cache.cache_stream_state
+    def request_params(self, stream_state: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None, **kwargs):
+        params = super().request_params(stream_state=stream_state, next_page_token=next_page_token, **kwargs)
+        # If there is a next page token then we should only send pagination-related parameters.
+        if not next_page_token:
+            if stream_state:
+                params[self.filter_field] = stream_state.get(self.cursor_field)
+        return params
 class Connections(RutterStream):
     def path(
         self, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
@@ -97,15 +115,6 @@ class Orders(ConnectionsRelatedStream, IncrementalRutterStream):
         self, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
     ) -> str:
         return "orders"
-
-    def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
-        next_page_token = response.json().get("next_cursor")
-
-        if next_page_token:
-            next_page_starting_after = response.json().get("next_cursor")
-            return next_page_starting_after
-        else:
-            return None
 
     def request_params(
         self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, any] = None, next_page_token: Mapping[str, Any] = None, **kwargs
@@ -130,15 +139,6 @@ class Customers(ConnectionsRelatedStream):
     ) -> str:
         return "customers"
 
-    def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
-        next_page_token = response.json().get("next_cursor")
-
-        if next_page_token:
-            next_page_starting_after = response.json().get("next_cursor")
-            return next_page_starting_after
-        else:
-            return None
-
     def request_params(
         self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, any] = None, next_page_token: Mapping[str, Any] = None, **kwargs
     ) -> MutableMapping[str, Any]:
@@ -162,15 +162,6 @@ class Products(ConnectionsRelatedStream):
         self, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
     ) -> str:
         return "products"
-
-    def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
-        next_page_token = response.json().get("next_cursor")
-
-        if next_page_token:
-            next_page_starting_after = response.json().get("next_cursor")
-            return next_page_starting_after
-        else:
-            return None
 
     def request_params(
         self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, any] = None, next_page_token: Mapping[str, Any] = None, **kwargs
