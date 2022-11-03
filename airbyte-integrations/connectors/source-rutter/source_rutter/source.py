@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from abc import ABC
 from datetime import datetime, time, timedelta
+import pendulum
 from typing import Any, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Type, Union, Dict
 
 import requests
@@ -41,9 +42,7 @@ class RutterStream(HttpStream, ABC):
     ) -> MutableMapping[str, Any]:
         params = {"limit": self.limit}
         if next_page_token:
-            params.update(**next_page_token)
-        else:
-            params
+            params.update(next_page_token)
         return params
 
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
@@ -84,14 +83,15 @@ class IncrementalRutterStream(RutterStream, IncrementalMixin):
 
     def request_params(self, stream_state: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None, **kwargs):
         params = super().request_params(stream_state=self.state, next_page_token=next_page_token, **kwargs)
-        # If there is a next page token then we should only send pagination-related parameters.
         latest_entry = self.state.get(self.cursor_field)
-        latest_entry_parsed = datetime.strptime(latest_entry, date_format)
-        unix_latest_entry_parsed = datetime.timestamp(latest_entry_parsed)*1000
-        filter_param = {self.start_date_filter:unix_latest_entry_parsed}
+        unix_latest_entry = int(pendulum.parse(latest_entry).timestamp()) * 1000
+        params[self.start_date_filter] = unix_latest_entry
+        #latest_entry_parsed = datetime.strptime(latest_entry, date_format)
+        #unix_latest_entry_parsed = datetime.timestamp(latest_entry_parsed)*1000
+        #filter_param = {self.start_date_filter:unix_latest_entry_parsed}
 #        if not next_page_token:
 #            params.update(filter_param)
-        return params.update(filter_param)
+        return params
     
     def read_records(self, *args, **kwargs) -> Iterable[Mapping[str, Any]]:
         for record in super().read_records(*args, **kwargs):
