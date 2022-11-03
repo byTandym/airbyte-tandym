@@ -89,9 +89,9 @@ class IncrementalRutterStream(RutterStream, IncrementalMixin):
         latest_entry_parsed = datetime.strptime(latest_entry, date_format)
         unix_latest_entry_parsed = datetime.timestamp(latest_entry_parsed)*1000
         filter_param = {self.start_date_filter:unix_latest_entry_parsed}
-        if not next_page_token:
-            params.update(filter_param)
-        return params
+#        if not next_page_token:
+#            params.update(filter_param)
+        return params.update(filter_param)
     
     def read_records(self, *args, **kwargs) -> Iterable[Mapping[str, Any]]:
         for record in super().read_records(*args, **kwargs):
