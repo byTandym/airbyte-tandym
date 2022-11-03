@@ -18,8 +18,3 @@ connectionSpecification:
       description: Add your corresponding client secret.
       airbyte_secret: true
       order: 1
-    start_date:
-      title: Start Date
-      type: integer
-      description: Define starte date in UNIX timestamp (ms).
-      order: 2
