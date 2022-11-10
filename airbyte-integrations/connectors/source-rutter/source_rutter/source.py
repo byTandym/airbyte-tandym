@@ -4,13 +4,13 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from datetime import datetime, time, timedelta
+from pendulum import DateTime, Period
 import pendulum
 from typing import Any, Iterable, List, Mapping, MutableMapping, Optional, Tuple, Type, Union, Dict
 
 import requests
-from .utils import EagerlyCachedStreamState as stream_state_cache
 from airbyte_cdk.sources import AbstractSource
 from airbyte_cdk.sources.streams import Stream, IncrementalMixin
 from airbyte_cdk.sources.streams.http import HttpStream
@@ -40,7 +40,7 @@ class RutterStream(HttpStream, ABC):
     def request_params(
         self, next_page_token: Mapping[str, Any] = None, **kwargs
     ) -> MutableMapping[str, Any]:
-        params = {"limit": self.limit}
+        params = {"limit": self.limit,"force_fetch": "true"}
         if next_page_token:
             params.update(next_page_token)
         return params
@@ -55,20 +55,18 @@ class RutterStream(HttpStream, ABC):
         for stream_slice in stream_slices:
             for record in stream.read_records(sync_mode=SyncMode.full_refresh, stream_slice=stream_slice):
                 yield {slice_field: record["access_token"]}
-
 class IncrementalRutterStream(RutterStream, IncrementalMixin):
     start_date_filter = "updated_at_min"
     end_date_filter = "updated_at_max"
-    min_id = ""
+    _initial_cursor = ""
+    #min_id = "1900-01-01T00:00:00.00Z"
+    min_id = "2022-11-09T00:00:00.00Z"
+    cursor_field = "updated_at"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._cursor_value = self.min_id
-        
-    @property
-    @abstractmethod
-    def cursor_field(self) -> str:
-        pass
+        self._initial_cursor = self.state.get(self.cursor_field) or self.min_id
 
     @property
     def state_checkpoint_interval(self) -> int:
@@ -76,39 +74,42 @@ class IncrementalRutterStream(RutterStream, IncrementalMixin):
 
     @property
     def state(self) -> Mapping[str, Any]:
-        return {self.cursor_field: self._cursor_value}
-#        if self._cursor_value:
-#            return {self.cursor_field: self._cursor_value}
-#        else:
-#            return {self.cursor_field: self.min_id}
+#        return {self.cursor_field: self._cursor_value}
+        if self._cursor_value:
+            return {self.cursor_field: self._cursor_value}
+        elif self.state.get(self.cursor_field):
+            return {self.cursor_field: self.state.get(self.cursor_field)}
+        else:
+            return {self.cursor_field: self.min_id}
 
     @state.setter
     def state(self, value: Mapping[str, Any]):
         self._cursor_value = value.get(self.cursor_field)
 
-    def request_params(self, stream_state: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None, **kwargs):
-        stream_state = stream_state or {}
+    def request_params(self, next_page_token: Mapping[str, Any] = None, **kwargs):
         params = super().request_params(stream_state=self.state, next_page_token=next_page_token, **kwargs)
-        latest_stream_state = self.state.get(self.cursor_field)
-        unix_latest_stream_state = int(pendulum.parse(latest_stream_state).timestamp()) * 1000
-        if latest_stream_state:
-            params[self.start_date_filter] = unix_latest_stream_state
+        last_stream_state = self._initial_cursor
+        unix_last_stream_state = int(pendulum.parse(last_stream_state).timestamp()) * 1000
+        params[self.start_date_filter] = unix_last_stream_state
+        if last_stream_state:
+            last_stream_filter = {self.start_date_filter: unix_last_stream_state}
+            params.update(last_stream_filter)
         return params
 
     def parse_response(self, response: requests.Response, stream_state: Mapping[str, Any], **kwargs) -> Iterable[Mapping]:
-        for record in super().parse_response(response=response, stream_state=stream_state, **kwargs):
-            if self.cursor_field not in stream_state or record[self.cursor_field] > stream_state[self.cursor_field]:
+        for record in super().parse_response(response=response, stream_state=self.state, **kwargs):
+            if record[self.cursor_field] > stream_state[self.cursor_field]:
+                self._cursor_value = record[self.cursor_field]
                 yield record
 
-#    def read_records(self, *args, **kwargs) -> Iterable[Mapping[str, Any]]:
-#        for record in super().read_records(*args, **kwargs):
-#            if self._cursor_value:
-#                latest_record_date = record[self.cursor_field]
-#                self._cursor_value = max(self._cursor_value, latest_record_date)
-#            yield record
+    def read_records(self, *args, **kwargs) -> Iterable[Mapping[str, Any]]:
+        for record in super().read_records(*args, **kwargs):
+            if self._cursor_value:
+                latest_record_date = record[self.cursor_field]
+                self._cursor_value = max(self._cursor_value, latest_record_date)
+            yield record
 class Connections(RutterStream):
     resource_name = "connections"
-
 class ConnectionsRelatedStream(RutterStream, ABC):    
     def stream_slices(
         self, sync_mode: SyncMode, cursor_field: List[str] = None, stream_state: Mapping[str, Any] = None
@@ -126,14 +127,13 @@ class ConnectionsRelatedStream(RutterStream, ABC):
         yield from data
 class Orders(ConnectionsRelatedStream, IncrementalRutterStream):
     resource_name = "orders"
-    min_id = "1900-01-01T00:00:00.00Z"
-    cursor_field = "updated_at"
 
     def request_params(
         self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, any] = None, next_page_token: Mapping[str, Any] = None, **kwargs
     ) -> MutableMapping[str, Any]:
-        params = super().request_params(stream_state=self.state, **kwargs)
-        stream_params = {"access_token":stream_slice["access_token"], "expand":"transactions"}
+        params = super().request_params(next_page_token=next_page_token, **kwargs)
+#        stream_params = {"access_token":stream_slice["access_token"], "expand":"transactions"}
+        stream_params = {"access_token":"b90ccb1f-383f-4180-bf8b-c101e42c1390"}
         params.update(stream_params)
         return params
 
@@ -170,6 +170,6 @@ class SourceRutter(AbstractSource):
         return [
             Connections(**full_refresh_stream_kwargs),
             Orders(**incremental_stream_kwargs),
-            Customers(**full_refresh_stream_kwargs),
-            Products(**full_refresh_stream_kwargs),
+#            Customers(**full_refresh_stream_kwargs),
+#            Products(**full_refresh_stream_kwargs),
         ]
