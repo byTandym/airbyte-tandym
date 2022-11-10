@@ -132,8 +132,8 @@ class Orders(ConnectionsRelatedStream, IncrementalRutterStream):
         self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, any] = None, next_page_token: Mapping[str, Any] = None, **kwargs
     ) -> MutableMapping[str, Any]:
         params = super().request_params(next_page_token=next_page_token, **kwargs)
-#        stream_params = {"access_token":stream_slice["access_token"], "expand":"transactions"}
-        stream_params = {"access_token":"b90ccb1f-383f-4180-bf8b-c101e42c1390"}
+        stream_params = {"access_token":stream_slice["access_token"], "expand":"transactions"}
+#        stream_params = {"access_token":"b90ccb1f-383f-4180-bf8b-c101e42c1390"}
         params.update(stream_params)
         return params
 
