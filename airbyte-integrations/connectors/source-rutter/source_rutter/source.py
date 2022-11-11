@@ -60,7 +60,7 @@ class IncrementalRutterStream(RutterStream, IncrementalMixin):
     end_date_filter = "updated_at_max"
     _initial_cursor = ""
     #min_id = "1900-01-01T00:00:00.00Z"
-    min_id = "2022-11-09T00:00:00.00Z"
+    min_id = "2022-11-10T00:00:00.00Z"
     cursor_field = "updated_at"
 
     def __init__(self, *args, **kwargs):
@@ -132,8 +132,8 @@ class Orders(ConnectionsRelatedStream, IncrementalRutterStream):
         self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, any] = None, next_page_token: Mapping[str, Any] = None, **kwargs
     ) -> MutableMapping[str, Any]:
         params = super().request_params(next_page_token=next_page_token, **kwargs)
-        stream_params = {"access_token":stream_slice["access_token"], "expand":"transactions"}
-#        stream_params = {"access_token":"b90ccb1f-383f-4180-bf8b-c101e42c1390"}
+#        stream_params = {"access_token":stream_slice["access_token"], "expand":"transactions"}
+        stream_params = {"access_token": "b90ccb1f-383f-4180-bf8b-c101e42c1390"}
         params.update(stream_params)
         return params
 
