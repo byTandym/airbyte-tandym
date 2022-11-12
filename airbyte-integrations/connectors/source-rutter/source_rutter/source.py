@@ -107,6 +107,22 @@ class Orders(IncrementalRutterStream):
         params = super().request_params(stream_state=stream_state, stream_slice=stream_slice, next_page_token=next_page_token)
         params["expand"] = "transactions"
         return params
+
+    def parse_response(
+        self,
+        response: requests.Response, 
+        **kwargs
+        ) -> Iterable[Mapping]:
+        
+        response_json = response.json()
+        data = response_json.get(self.resource_name, [])
+        connection = response_json['connection']
+        connection['connection_id'] = connection['id']
+        del connection['id']        
+        
+        for id in data:
+            id.update(connection)
+        yield from data
 class Customers(IncrementalRutterStream):
     resource_name = "customers"
     cursor_field = "updated_at"
