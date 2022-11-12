@@ -89,23 +89,6 @@ class IncrementalRutterStream(RutterStream, ABC):
         params = super().request_params(stream_state=stream_state, stream_slice=stream_slice, next_page_token=next_page_token)
         if self.cursor_field in stream_state:
             params["updated_at_min"] = int(pendulum.parse(stream_state[self.cursor_field]).timestamp()) * 1000
-            #params["updated_at[gte]"] = stream_state[self.cursor_field]
-        return params
-class Connections(RutterStream):
-    resource_name = "connections"
-class Orders(IncrementalRutterStream):
-    resource_name = "orders"
-    cursor_field = "updated_at"
-
-    def request_params(
-        self, 
-        stream_state: Mapping[str, Any], 
-        stream_slice: Mapping[str, any] = None, 
-        next_page_token: Mapping[str, Any] = None
-        ) -> MutableMapping[str, Any]:
-        
-        params = super().request_params(stream_state=stream_state, stream_slice=stream_slice, next_page_token=next_page_token)
-        params["expand"] = "transactions"
         return params
 
     def parse_response(
@@ -123,6 +106,22 @@ class Orders(IncrementalRutterStream):
         for id in data:
             id.update(connection)
         yield from data
+class Connections(RutterStream):
+    resource_name = "connections"
+class Orders(IncrementalRutterStream):
+    resource_name = "orders"
+    cursor_field = "updated_at"
+
+    def request_params(
+        self, 
+        stream_state: Mapping[str, Any], 
+        stream_slice: Mapping[str, any] = None, 
+        next_page_token: Mapping[str, Any] = None
+        ) -> MutableMapping[str, Any]:
+        
+        params = super().request_params(stream_state=stream_state, stream_slice=stream_slice, next_page_token=next_page_token)
+        params["expand"] = "transactions"
+        return params
 class Customers(IncrementalRutterStream):
     resource_name = "customers"
     cursor_field = "updated_at"
