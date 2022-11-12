@@ -17,20 +17,28 @@ from airbyte_cdk.sources.streams.http import HttpStream
 from airbyte_cdk.sources.streams.http.auth import BasicHttpAuthenticator
 from airbyte_cdk.models import SyncMode
 
-date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
-#epoch = datetime(1970, 1, 1)
 
 class RutterStream(HttpStream, ABC):
     url_base = "https://production.rutterapi.com/"
     primary_key = "id"
-    limit = 10
+    limit = 50
     resource_name = ""
 
-    def path(self, **kwargs) -> str:
+    def __init__(
+        self, 
+        access_token: str, 
+        start_date: str = None, 
+        **kwargs):
+        
+        super().__init__(**kwargs)
+        self.access_token = access_token
+        self.start_date = start_date
+
+    def path(
+        self, **kwargs) -> str:
         return self.resource_name
 
-    @staticmethod
-    def next_page_token(response: requests.Response) -> Optional[Mapping[str, Any]]:
+    def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
         next_page_token = response.json().get("next_cursor")
         if next_page_token:
             return {"cursor":next_page_token}
@@ -38,9 +46,13 @@ class RutterStream(HttpStream, ABC):
             return None
 
     def request_params(
-        self, next_page_token: Mapping[str, Any] = None, **kwargs
-    ) -> MutableMapping[str, Any]:
-        params = {"limit": self.limit,"force_fetch": "true"}
+        self, 
+        stream_state: Mapping[str, Any], 
+        stream_slice: Mapping[str, any] = None, 
+        next_page_token: Mapping[str, Any] = None, 
+        ) -> MutableMapping[str, Any]:
+        
+        params = {"limit": self.limit, "force_fetch": "true", "access_token": self.access_token, "updated_at_min": int(pendulum.parse(self.start_date).timestamp()) * 1000}
         if next_page_token:
             params.update(next_page_token)
         return params
@@ -48,116 +60,63 @@ class RutterStream(HttpStream, ABC):
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
         response_json = response.json()
         yield from response_json.get(self.resource_name, [])
-
-    def read_slices_from_records(self, stream_class: Type[RutterStream], slice_field: str) -> Iterable[Optional[Mapping[str, Any]]]:
-        stream = stream_class(authenticator=self.authenticator)
-        stream_slices = stream.stream_slices(sync_mode=SyncMode.full_refresh)
-        for stream_slice in stream_slices:
-            for record in stream.read_records(sync_mode=SyncMode.full_refresh, stream_slice=stream_slice):
-                yield {slice_field: record["access_token"]}
-class IncrementalRutterStream(RutterStream, IncrementalMixin):
-    start_date_filter = "updated_at_min"
-    end_date_filter = "updated_at_max"
-    _initial_cursor = ""
-    #min_id = "1900-01-01T00:00:00.00Z"
-    min_id = "2022-11-10T00:00:00.00Z"
-    cursor_field = "updated_at"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._cursor_value = self.min_id
-        self._initial_cursor = self.state.get(self.cursor_field) or self.min_id
-
+class IncrementalRutterStream(RutterStream, ABC):
+    
     @property
-    def state_checkpoint_interval(self) -> int:
-        return super().limit
+    def cursor_field(self) -> str:
+        return "updated_at"
 
-    @property
-    def state(self) -> Mapping[str, Any]:
-#        return {self.cursor_field: self._cursor_value}
-        if self._cursor_value:
-            return {self.cursor_field: self._cursor_value}
-        elif self.state.get(self.cursor_field):
-            return {self.cursor_field: self.state.get(self.cursor_field)}
-        else:
-            return {self.cursor_field: self.min_id}
+    def get_updated_state(
+        self, 
+        current_stream_state: MutableMapping[str, Any], 
+        latest_record: Mapping[str, Any]
+        ) -> Mapping[str, Any]:
+        
+        current_stream_state = current_stream_state or {}
 
-    @state.setter
-    def state(self, value: Mapping[str, Any]):
-        self._cursor_value = value.get(self.cursor_field)
+        current_stream_state_date = current_stream_state.get(self.cursor_field, self.start_date)
+        latest_record_date = latest_record.get(self.cursor_field, self.start_date)
 
-    def request_params(self, next_page_token: Mapping[str, Any] = None, **kwargs):
-        params = super().request_params(stream_state=self.state, next_page_token=next_page_token, **kwargs)
-        last_stream_state = self._initial_cursor
-        unix_last_stream_state = int(pendulum.parse(last_stream_state).timestamp()) * 1000
-        params[self.start_date_filter] = unix_last_stream_state
-        if last_stream_state:
-            last_stream_filter = {self.start_date_filter: unix_last_stream_state}
-            params.update(last_stream_filter)
+        return {self.cursor_field: max(current_stream_state_date, latest_record_date)}
+
+    def request_params(
+        self, 
+        stream_state: Mapping[str, Any], 
+        stream_slice: Mapping[str, any] = None, 
+        next_page_token: Mapping[str, Any] = None
+        ) -> MutableMapping[str, Any]:
+        
+        params = super().request_params(stream_state=stream_state, stream_slice=stream_slice, next_page_token=next_page_token)
+        if self.cursor_field in stream_state:
+            params["updated_at_min"] = int(pendulum.parse(stream_state[self.cursor_field]).timestamp()) * 1000
+            #params["updated_at[gte]"] = stream_state[self.cursor_field]
         return params
-
-    def parse_response(self, response: requests.Response, stream_state: Mapping[str, Any], **kwargs) -> Iterable[Mapping]:
-        for record in super().parse_response(response=response, stream_state=self.state, **kwargs):
-            if record[self.cursor_field] > stream_state[self.cursor_field]:
-                self._cursor_value = record[self.cursor_field]
-                yield record
-
-    def read_records(self, *args, **kwargs) -> Iterable[Mapping[str, Any]]:
-        for record in super().read_records(*args, **kwargs):
-            if self._cursor_value:
-                latest_record_date = record[self.cursor_field]
-                self._cursor_value = max(self._cursor_value, latest_record_date)
-            yield record
 class Connections(RutterStream):
     resource_name = "connections"
-class ConnectionsRelatedStream(RutterStream, ABC):    
-    def stream_slices(
-        self, sync_mode: SyncMode, cursor_field: List[str] = None, stream_state: Mapping[str, Any] = None
-    ) -> Iterable[Optional[Mapping[str, Any]]]:
-        yield from self.read_slices_from_records(stream_class=Connections, slice_field="access_token")
-
-    def parse_response(self, response: requests.Response, stream_slice: Mapping[str, any] = None, stream_state: Mapping[str, any] = None, **kwargs) -> Iterable[Mapping]:
-        response_json = response.json()
-        data = response_json.get(self.resource_name, [])
-        connection = response_json['connection']
-        connection['connection_id'] = connection['id']
-        del connection['id']
-        for id in data:
-            id.update(connection)
-        yield from data
-class Orders(ConnectionsRelatedStream, IncrementalRutterStream):
+class Orders(IncrementalRutterStream):
     resource_name = "orders"
+    cursor_field = "updated_at"
 
     def request_params(
-        self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, any] = None, next_page_token: Mapping[str, Any] = None, **kwargs
-    ) -> MutableMapping[str, Any]:
-        params = super().request_params(next_page_token=next_page_token, **kwargs)
-#        stream_params = {"access_token":stream_slice["access_token"], "expand":"transactions"}
-        stream_params = {"access_token": "b90ccb1f-383f-4180-bf8b-c101e42c1390"}
-        params.update(stream_params)
+        self, 
+        stream_state: Mapping[str, Any], 
+        stream_slice: Mapping[str, any] = None, 
+        next_page_token: Mapping[str, Any] = None
+        ) -> MutableMapping[str, Any]:
+        
+        params = super().request_params(stream_state=stream_state, stream_slice=stream_slice, next_page_token=next_page_token)
+        params["expand"] = "transactions"
         return params
-
-class Customers(ConnectionsRelatedStream):
+class Customers(IncrementalRutterStream):
     resource_name = "customers"
-
-    def request_params(
-        self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, any] = None, next_page_token: Mapping[str, Any] = None, **kwargs
-    ) -> MutableMapping[str, Any]:
-        params = {"access_token":stream_slice["access_token"]}
-        return params
-class Products(ConnectionsRelatedStream):
-    resource_name = "products"
-
-    def request_params(
-        self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, any] = None, next_page_token: Mapping[str, Any] = None, **kwargs
-    ) -> MutableMapping[str, Any]:
-        params = {"access_token":stream_slice["access_token"]}
-        return params
+    cursor_field = "updated_at"
 class SourceRutter(AbstractSource):
     def check_connection(self, logger, config: Mapping[str, Any]) -> Tuple[bool, any]:
         try:
             auth=BasicHttpAuthenticator(username=config["client_id"], password=config["client_secret"])
-            orders_gen = Connections(authenticator=auth).read_records(sync_mode=SyncMode.full_refresh)
+            access_token = config["access_token"]
+            start_date = config["start_date"]
+            orders_gen = Connections(authenticator=auth, access_token=access_token, start_date=start_date).read_records(sync_mode=SyncMode.full_refresh)
             next(orders_gen)
             return True, None
         except Exception as error:
@@ -165,11 +124,13 @@ class SourceRutter(AbstractSource):
 
     def streams(self, config: Mapping[str, Any]) -> List[Stream]:
         auth = BasicHttpAuthenticator(username=config["client_id"], password=config["client_secret"])
-        full_refresh_stream_kwargs = {"authenticator": auth}
-        incremental_stream_kwargs = {"authenticator": auth}
+        args = {
+            "authenticator": auth, 
+            "access_token": config.get("access_token"),
+            "start_date": config.get("start_date"),
+            }
         return [
-            Connections(**full_refresh_stream_kwargs),
-            Orders(**incremental_stream_kwargs),
-#            Customers(**full_refresh_stream_kwargs),
-#            Products(**full_refresh_stream_kwargs),
+            Connections(**args),
+            Orders(**args),
+            Customers(**args),
         ]
