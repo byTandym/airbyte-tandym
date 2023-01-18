@@ -86,6 +86,20 @@ class LineItems(AccountRelatedStream):
     def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
         account_id = stream_slice["account_id"]
         return f"accounts/{account_id}/line_items"
+class InterestRates(AccountRelatedStream):
+
+    primary_key = "interest_rate_id"
+
+    def path(self, stream_slice: Mapping[str, Any] = None, **kwargs) -> str:
+        account_id = stream_slice["account_id"]
+        return f"accounts/{account_id}/interest_rates"
+
+    def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
+        for record in response.json():
+            yield record
+
+    def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
+        return None
 class StatementsList(AccountRelatedStream):
 
     primary_key = "statement_id"
@@ -158,5 +172,6 @@ class SourceCanopy(AbstractSource):
             Customers(**args),
             Accounts(**args),
             LineItems(**args),
+            InterestRates(**args),
             StatementsList(**args),
             StatementsDetail(**args)]
