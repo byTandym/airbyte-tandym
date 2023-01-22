@@ -1241,7 +1241,7 @@ class Engagements(IncrementalStream):
     @property
     def url(self):
         if self.state:
-            return "/engagements/v1/engagements/recent/modified"
+            return "/engagements/v1/engagements/paged"
         return "/engagements/v1/engagements/paged"
 
     def _transform(self, records: Iterable) -> Iterable:
@@ -1292,13 +1292,6 @@ class Engagements(IncrementalStream):
                 yield record
 
             next_page_token = self.next_page_token(response)
-            if self.state and next_page_token and next_page_token["offset"] >= 10000:
-                # As per Hubspot documentation, the recent engagements endpoint will only return the 10K
-                # most recently updated engagements. Since they are returned sorted by `lastUpdated` in
-                # descending order, we stop getting records if we have already reached 10,000. Attempting
-                # to get more than 10K will result in a HTTP 400 error.
-                # https://legacydocs.hubspot.com/docs/methods/engagements/get-recent-engagements
-                next_page_token = None
 
             if not next_page_token:
                 pagination_complete = True
