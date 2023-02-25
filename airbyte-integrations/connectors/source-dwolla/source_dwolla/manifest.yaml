@@ -1,0 +1,604 @@
+version: 0.28.0
+type: DeclarativeSource
+check:
+  type: CheckStream
+  stream_names:
+    - Customers
+streams:
+  - type: DeclarativeStream
+    name: Customers
+    primary_key:
+      - id
+    schema_loader:
+      type: InlineSchemaLoader
+      schema:
+        $schema: http://json-schema.org/schema#
+        properties:
+          _links:
+            properties:
+              deactivate:
+                properties:
+                  href:
+                    type: string
+                  resource-type:
+                    type: string
+                  type:
+                    type: string
+                type: object
+              edit:
+                properties:
+                  href:
+                    type: string
+                  resource-type:
+                    type: string
+                  type:
+                    type: string
+                type: object
+              edit-form:
+                properties:
+                  href:
+                    type: string
+                  resource-type:
+                    type: string
+                  type:
+                    type: string
+                type: object
+              funding-sources:
+                properties:
+                  href:
+                    type: string
+                  resource-type:
+                    type: string
+                  type:
+                    type: string
+                type: object
+              receive:
+                properties:
+                  href:
+                    type: string
+                  resource-type:
+                    type: string
+                  type:
+                    type: string
+                type: object
+              self:
+                properties:
+                  href:
+                    type: string
+                  resource-type:
+                    type: string
+                  type:
+                    type: string
+                type: object
+              send:
+                properties:
+                  href:
+                    type: string
+                  resource-type:
+                    type: string
+                  type:
+                    type: string
+                type: object
+              transfers:
+                properties:
+                  href:
+                    type: string
+                  resource-type:
+                    type: string
+                  type:
+                    type: string
+                type: object
+            type: object
+          created:
+            type: string
+          email:
+            type: string
+          firstName:
+            type: string
+          id:
+            type: string
+          lastName:
+            type: string
+          phone:
+            type: string
+          status:
+            type: string
+          type:
+            type: string
+        type: object
+    retriever:
+      type: SimpleRetriever
+      requester:
+        type: HttpRequester
+        url_base: https://api.dwolla.com/
+        path: customers
+        http_method: GET
+        request_parameters: {}
+        request_headers:
+          Accept: application/vnd.dwolla.v1.hal+json
+        request_body_json: {}
+        authenticator:
+          type: OAuthAuthenticator
+          client_id: '{{ config[''client_id''] }}'
+          client_secret: '{{ config[''client_secret''] }}'
+          refresh_token: '{{ config[''client_refresh_token''] }}'
+          refresh_request_body: {}
+          token_refresh_endpoint: https://api.dwolla.com/token
+          grant_type: client_credentials
+      record_selector:
+        type: RecordSelector
+        extractor:
+          type: DpathExtractor
+          field_path:
+            - _embedded
+            - customers
+      paginator:
+        type: DefaultPaginator
+        page_token_option:
+          type: RequestOption
+          inject_into: request_parameter
+          field_name: offset
+        page_size_option:
+          inject_into: request_parameter
+          type: RequestOption
+          field_name: limit
+        pagination_strategy:
+          type: OffsetIncrement
+          page_size: 10
+  - type: DeclarativeStream
+    name: Funding Sources
+    primary_key:
+      - id
+    schema_loader:
+      type: InlineSchemaLoader
+      schema:
+        $schema: http://json-schema.org/schema#
+        properties:
+          _embedded:
+            properties:
+              funding-sources:
+                type: array
+            type: object
+          _links:
+            properties:
+              customer:
+                properties:
+                  href:
+                    type: string
+                  resource-type:
+                    type: string
+                  type:
+                    type: string
+                type: object
+              self:
+                properties:
+                  href:
+                    type: string
+                  resource-type:
+                    type: string
+                  type:
+                    type: string
+                type: object
+            type: object
+        type: object
+    retriever:
+      type: SimpleRetriever
+      requester:
+        type: HttpRequester
+        url_base: https://api.dwolla.com/
+        path: https://api.dwolla.com/customers/{{ stream_slice.id }}/funding-sources
+        http_method: GET
+        request_parameters: {}
+        request_headers:
+          Accept: application/vnd.dwolla.v1.hal+json
+        request_body_json: {}
+        authenticator:
+          type: OAuthAuthenticator
+          client_id: '{{ config[''client_id''] }}'
+          client_secret: '{{ config[''client_secret''] }}'
+          refresh_token: '{{ config[''client_refresh_token''] }}'
+          refresh_request_body: {}
+          token_refresh_endpoint: https://api.dwolla.com/token
+          grant_type: client_credentials
+      record_selector:
+        type: RecordSelector
+        extractor:
+          type: DpathExtractor
+          field_path:
+            - _embedded
+            - funding-sources
+      paginator:
+        type: NoPagination
+      partition_router:
+        - type: SubstreamPartitionRouter
+          parent_stream_configs:
+            - type: ParentStreamConfig
+              parent_key: id
+              partition_field: id
+              stream:
+                type: DeclarativeStream
+                name: Customers
+                primary_key:
+                  - id
+                schema_loader:
+                  type: InlineSchemaLoader
+                  schema:
+                    $schema: http://json-schema.org/schema#
+                    properties:
+                      _links:
+                        properties:
+                          deactivate:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          edit:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          edit-form:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          funding-sources:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          receive:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          self:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          send:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          transfers:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                        type: object
+                      created:
+                        type: string
+                      email:
+                        type: string
+                      firstName:
+                        type: string
+                      id:
+                        type: string
+                      lastName:
+                        type: string
+                      phone:
+                        type: string
+                      status:
+                        type: string
+                      type:
+                        type: string
+                    type: object
+                retriever:
+                  type: SimpleRetriever
+                  requester:
+                    type: HttpRequester
+                    url_base: https://api.dwolla.com/
+                    path: customers
+                    http_method: GET
+                    request_parameters: {}
+                    request_headers:
+                      Accept: application/vnd.dwolla.v1.hal+json
+                    request_body_json: {}
+                    authenticator:
+                      type: OAuthAuthenticator
+                      client_id: '{{ config[''client_id''] }}'
+                      client_secret: '{{ config[''client_secret''] }}'
+                      refresh_token: '{{ config[''client_refresh_token''] }}'
+                      refresh_request_body: {}
+                      token_refresh_endpoint: https://api.dwolla.com/token
+                      grant_type: client_credentials
+                  record_selector:
+                    type: RecordSelector
+                    extractor:
+                      type: DpathExtractor
+                      field_path:
+                        - _embedded
+                        - customers
+                  paginator:
+                    type: DefaultPaginator
+                    page_token_option:
+                      type: RequestOption
+                      inject_into: request_parameter
+                      field_name: offset
+                    page_size_option:
+                      inject_into: request_parameter
+                      type: RequestOption
+                      field_name: limit
+                    pagination_strategy:
+                      type: OffsetIncrement
+                      page_size: 10
+  - type: DeclarativeStream
+    name: Transfers
+    primary_key:
+      - id
+    schema_loader:
+      type: InlineSchemaLoader
+      schema:
+        $schema: http://json-schema.org/schema#
+        properties:
+          _embedded:
+            properties:
+              transfers:
+                type: array
+            type: object
+          _links:
+            properties:
+              first:
+                properties:
+                  href:
+                    type: string
+                  resource-type:
+                    type: string
+                  type:
+                    type: string
+                type: object
+              last:
+                properties:
+                  href:
+                    type: string
+                  resource-type:
+                    type: string
+                  type:
+                    type: string
+                type: object
+              self:
+                properties:
+                  href:
+                    type: string
+                  resource-type:
+                    type: string
+                  type:
+                    type: string
+                type: object
+            type: object
+          total:
+            type: integer
+        type: object
+    retriever:
+      type: SimpleRetriever
+      requester:
+        type: HttpRequester
+        url_base: https://api.dwolla.com/
+        path: https://api.dwolla.com/customers/{{ stream_slice.id }}/transfers
+        http_method: GET
+        request_parameters: {}
+        request_headers:
+          Accept: application/vnd.dwolla.v1.hal+json
+        request_body_json: {}
+        authenticator:
+          type: OAuthAuthenticator
+          client_id: '{{ config[''client_id''] }}'
+          client_secret: '{{ config[''client_secret''] }}'
+          refresh_token: '{{ config[''client_refresh_token''] }}'
+          refresh_request_body: {}
+          token_refresh_endpoint: https://api.dwolla.com/token
+          grant_type: client_credentials
+      record_selector:
+        type: RecordSelector
+        extractor:
+          type: DpathExtractor
+          field_path:
+            - _embedded
+            - transfers
+      paginator:
+        type: NoPagination
+      partition_router:
+        - type: SubstreamPartitionRouter
+          parent_stream_configs:
+            - type: ParentStreamConfig
+              parent_key: id
+              partition_field: id
+              stream:
+                type: DeclarativeStream
+                name: Customers
+                primary_key:
+                  - id
+                schema_loader:
+                  type: InlineSchemaLoader
+                  schema:
+                    $schema: http://json-schema.org/schema#
+                    properties:
+                      _links:
+                        properties:
+                          deactivate:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          edit:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          edit-form:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          funding-sources:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          receive:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          self:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          send:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                          transfers:
+                            properties:
+                              href:
+                                type: string
+                              resource-type:
+                                type: string
+                              type:
+                                type: string
+                            type: object
+                        type: object
+                      created:
+                        type: string
+                      email:
+                        type: string
+                      firstName:
+                        type: string
+                      id:
+                        type: string
+                      lastName:
+                        type: string
+                      phone:
+                        type: string
+                      status:
+                        type: string
+                      type:
+                        type: string
+                    type: object
+                retriever:
+                  type: SimpleRetriever
+                  requester:
+                    type: HttpRequester
+                    url_base: https://api.dwolla.com/
+                    path: customers
+                    http_method: GET
+                    request_parameters: {}
+                    request_headers:
+                      Accept: application/vnd.dwolla.v1.hal+json
+                    request_body_json: {}
+                    authenticator:
+                      type: OAuthAuthenticator
+                      client_id: '{{ config[''client_id''] }}'
+                      client_secret: '{{ config[''client_secret''] }}'
+                      refresh_token: '{{ config[''client_refresh_token''] }}'
+                      refresh_request_body: {}
+                      token_refresh_endpoint: https://api.dwolla.com/token
+                      grant_type: client_credentials
+                  record_selector:
+                    type: RecordSelector
+                    extractor:
+                      type: DpathExtractor
+                      field_path:
+                        - _embedded
+                        - customers
+                  paginator:
+                    type: DefaultPaginator
+                    page_token_option:
+                      type: RequestOption
+                      inject_into: request_parameter
+                      field_name: offset
+                    page_size_option:
+                      inject_into: request_parameter
+                      type: RequestOption
+                      field_name: limit
+                    pagination_strategy:
+                      type: OffsetIncrement
+                      page_size: 10
+spec:
+  connection_specification:
+    $schema: http://json-schema.org/draft-07/schema#
+    type: object
+    required:
+      - client_id
+      - client_secret
+      - client_refresh_token
+    properties:
+      client_id:
+        type: string
+        title: Client ID
+        airbyte_secret: true
+      client_secret:
+        type: string
+        title: Client secret
+        airbyte_secret: true
+      client_refresh_token:
+        type: string
+        title: Refresh token
+        airbyte_secret: true
+    additionalProperties: true
+  documentation_url: https://example.org
+  type: Spec
