@@ -57,6 +57,14 @@ const config = {
                             from: '/connector-development/config-based/',
                             to: '/connector-development/config-based/low-code-cdk-overview',
                         },
+                        {
+                            from: '/project-overview/changelog',
+                            to: '/category/release-notes',
+                        },
+                        {
+                            from: '/connector-development/config-based/understanding-the-yaml-file/stream-slicers/',
+                            to: '/connector-development/config-based/understanding-the-yaml-file/partition-router',
+                        },
 //                        {
 //                         from: '/some-lame-path',
 //                         to: '/a-much-cooler-uri',
@@ -77,6 +85,7 @@ const config = {
                     sidebarPath: require.resolve('./sidebars.js'),
                     editUrl: 'https://github.com/airbytehq/airbyte/blob/master/docs',
                     path: '../docs',
+                    exclude: ['**/*.inapp.md'],
                 },
                 blog: false,
                 theme: {

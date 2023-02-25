@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Airbyte, Inc., all rights reserved.
+ * Copyright (c) 2023 Airbyte, Inc., all rights reserved.
  */
 
 package io.airbyte.integrations.standardtest.destination;
@@ -19,13 +19,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import io.airbyte.commons.features.EnvVariableFeatureFlags;
 import io.airbyte.commons.jackson.MoreMappers;
 import io.airbyte.commons.json.Jsons;
 import io.airbyte.commons.lang.Exceptions;
 import io.airbyte.commons.resources.MoreResources;
 import io.airbyte.commons.string.Strings;
 import io.airbyte.commons.util.MoreIterators;
-import io.airbyte.config.EnvConfigs;
 import io.airbyte.config.JobGetSpecConfig;
 import io.airbyte.config.OperatorDbt;
 import io.airbyte.config.StandardCheckConnectionInput;
@@ -52,11 +52,10 @@ import io.airbyte.protocol.models.v0.ConfiguredAirbyteCatalog;
 import io.airbyte.protocol.models.v0.ConnectorSpecification;
 import io.airbyte.protocol.models.v0.DestinationSyncMode;
 import io.airbyte.protocol.models.v0.SyncMode;
-import io.airbyte.workers.WorkerConfigs;
-import io.airbyte.workers.exception.WorkerException;
+import io.airbyte.workers.exception.TestHarnessException;
 import io.airbyte.workers.general.DbtTransformationRunner;
-import io.airbyte.workers.general.DefaultCheckConnectionWorker;
-import io.airbyte.workers.general.DefaultGetSpecWorker;
+import io.airbyte.workers.general.DefaultCheckConnectionTestHarness;
+import io.airbyte.workers.general.DefaultGetSpecTestHarness;
 import io.airbyte.workers.helper.ConnectorConfigUpdater;
 import io.airbyte.workers.helper.EntrypointEnvChecker;
 import io.airbyte.workers.internal.AirbyteDestination;
@@ -115,7 +114,6 @@ public abstract class DestinationAcceptanceTest {
 
   private Path jobRoot;
   private ProcessFactory processFactory;
-  private WorkerConfigs workerConfigs;
   private ConnectorConfigUpdater mConnectorConfigUpdater;
 
   protected Path localRoot;
@@ -133,14 +131,10 @@ public abstract class DestinationAcceptanceTest {
   }
 
   private Optional<StandardDestinationDefinition> getOptionalDestinationDefinitionFromProvider(final String imageNameWithoutTag) {
-    try {
-      final LocalDefinitionsProvider provider = new LocalDefinitionsProvider(LocalDefinitionsProvider.DEFAULT_SEED_DEFINITION_RESOURCE_CLASS);
-      return provider.getDestinationDefinitions().stream()
-          .filter(definition -> imageNameWithoutTag.equalsIgnoreCase(definition.getDockerRepository()))
-          .findFirst();
-    } catch (final IOException e) {
-      return Optional.empty();
-    }
+    final LocalDefinitionsProvider provider = new LocalDefinitionsProvider();
+    return provider.getDestinationDefinitions().stream()
+        .filter(definition -> imageNameWithoutTag.equalsIgnoreCase(definition.getDockerRepository()))
+        .findFirst();
   }
 
   protected String getNormalizationImageName() {
@@ -220,7 +214,7 @@ public abstract class DestinationAcceptanceTest {
    *
    * @return - a boolean.
    */
-  protected boolean implementsAppend() throws WorkerException {
+  protected boolean implementsAppend() throws TestHarnessException {
     final ConnectorSpecification spec = runSpec();
     assertNotNull(spec);
     if (spec.getSupportsIncremental() != null) {
@@ -258,7 +252,7 @@ public abstract class DestinationAcceptanceTest {
    *
    * @return - a boolean.
    */
-  protected boolean implementsAppendDedup() throws WorkerException {
+  protected boolean implementsAppendDedup() throws TestHarnessException {
     final ConnectorSpecification spec = runSpec();
     assertNotNull(spec);
     if (spec.getSupportedDestinationSyncModes() != null) {
@@ -274,7 +268,7 @@ public abstract class DestinationAcceptanceTest {
    *
    * @return - a boolean.
    */
-  protected boolean implementsOverwrite() throws WorkerException {
+  protected boolean implementsOverwrite() throws TestHarnessException {
     final ConnectorSpecification spec = runSpec();
     assertNotNull(spec);
     if (spec.getSupportedDestinationSyncModes() != null) {
@@ -282,20 +276,6 @@ public abstract class DestinationAcceptanceTest {
     } else {
       return false;
     }
-  }
-
-  /**
-   * Override to return true to if the destination implements basic normalization and it should be
-   * tested here.
-   *
-   * @return - a boolean.
-   */
-  protected boolean supportsNormalization() {
-    return false;
-  }
-
-  protected boolean supportsDBT() {
-    return false;
   }
 
   /**
@@ -364,13 +344,16 @@ public abstract class DestinationAcceptanceTest {
     LOGGER.info("jobRoot: {}", jobRoot);
     LOGGER.info("localRoot: {}", localRoot);
     testEnv = new TestDestinationEnv(localRoot);
-    workerConfigs = new WorkerConfigs(new EnvConfigs());
     mConnectorConfigUpdater = Mockito.mock(ConnectorConfigUpdater.class);
 
     setup(testEnv);
 
-    processFactory = new DockerProcessFactory(workerConfigs, workspaceRoot,
-        workspaceRoot.toString(), localRoot.toString(), "host");
+    processFactory = new DockerProcessFactory(
+        workspaceRoot,
+        workspaceRoot.toString(),
+        localRoot.toString(),
+        "host",
+        Collections.emptyMap());
   }
 
   @AfterEach
@@ -382,7 +365,7 @@ public abstract class DestinationAcceptanceTest {
    * Verify that when the integrations returns a valid spec.
    */
   @Test
-  public void testGetSpec() throws WorkerException {
+  public void testGetSpec() throws TestHarnessException {
     assertNotNull(runSpec());
   }
 
@@ -569,10 +552,8 @@ public abstract class DestinationAcceptanceTest {
   }
 
   @Test
-  public void specNormalizationValueShouldBeCorrect() throws Exception {
-    final boolean normalizationFromDefinition = normalizationFromDefinition();
-    assertEquals(normalizationFromDefinition, supportsNormalization());
-    if (normalizationFromDefinition) {
+  public void normalizationFromDefinitionValueShouldBeCorrect() {
+    if (normalizationFromDefinition()) {
       boolean normalizationRunnerFactorySupportsDestinationImage;
       try {
         new DefaultNormalizationRunner(
@@ -583,13 +564,8 @@ public abstract class DestinationAcceptanceTest {
       } catch (final IllegalStateException e) {
         normalizationRunnerFactorySupportsDestinationImage = false;
       }
-      assertEquals(normalizationFromDefinition, normalizationRunnerFactorySupportsDestinationImage);
+      assertEquals(normalizationFromDefinition(), normalizationRunnerFactorySupportsDestinationImage);
     }
-  }
-
-  @Test
-  public void specDBTValueShouldBeCorrect() {
-    assertEquals(dbtFromDefinition(), supportsDBT());
   }
 
   /**
@@ -648,6 +624,69 @@ public abstract class DestinationAcceptanceTest {
     final String defaultSchema = getDefaultSchema(config);
     retrieveRawRecordsAndAssertSameMessages(catalog, expectedMessagesAfterSecondSync,
         defaultSchema);
+  }
+
+  @ArgumentsSource(DataArgumentsProvider.class)
+  @Test
+  public void testIncrementalSyncWithNormalizationDropOneColumn()
+      throws Exception {
+    if (!normalizationFromDefinition()) {
+      return;
+    }
+
+    final AirbyteCatalog catalog = Jsons.deserialize(
+        MoreResources.readResource(DataArgumentsProvider.EXCHANGE_RATE_CONFIG.getCatalogFileVersion(ProtocolVersion.V0)),
+        AirbyteCatalog.class);
+
+    final ConfiguredAirbyteCatalog configuredCatalog = CatalogHelpers.toDefaultConfiguredCatalog(
+        catalog);
+    configuredCatalog.getStreams().forEach(s -> {
+      s.withSyncMode(SyncMode.INCREMENTAL);
+      s.withDestinationSyncMode(DestinationSyncMode.APPEND_DEDUP);
+      s.withCursorField(Collections.emptyList());
+      // use composite primary key of various types (string, float)
+      s.withPrimaryKey(
+          List.of(List.of("id"), List.of("currency"), List.of("date"), List.of("NZD"), List.of("USD")));
+    });
+
+    List<AirbyteMessage> messages = MoreResources.readResource(DataArgumentsProvider.EXCHANGE_RATE_CONFIG.getMessageFileVersion(ProtocolVersion.V0))
+        .lines()
+        .map(record -> Jsons.deserialize(record, AirbyteMessage.class))
+        .collect(Collectors.toList());
+
+    final JsonNode config = getConfig();
+    runSyncAndVerifyStateOutput(config, messages, configuredCatalog, true);
+
+    final String defaultSchema = getDefaultSchema(config);
+    List<AirbyteRecordMessage> actualMessages = retrieveNormalizedRecords(catalog,
+        defaultSchema);
+    assertSameMessages(messages, actualMessages, true);
+
+    // remove one field
+    final JsonNode jsonSchema = configuredCatalog.getStreams().get(0).getStream().getJsonSchema();
+    ((ObjectNode) jsonSchema.findValue("properties")).remove("HKD");
+    // insert more messages
+    // NOTE: we re-read the messages because `assertSameMessages` above pruned the emittedAt timestamps.
+    messages = MoreResources.readResource(DataArgumentsProvider.EXCHANGE_RATE_CONFIG.getMessageFileVersion(ProtocolVersion.V0)).lines()
+        .map(record -> Jsons.deserialize(record, AirbyteMessage.class))
+        .collect(Collectors.toList());
+    messages.add(Jsons.deserialize(
+        "{\"type\": \"RECORD\", \"record\": {\"stream\": \"exchange_rate\", \"emitted_at\": 1602637989500, \"data\": { \"id\": 2, \"currency\": \"EUR\", \"date\": \"2020-09-02T00:00:00Z\", \"NZD\": 1.14, \"USD\": 10.16}}}\n",
+        AirbyteMessage.class));
+
+    runSyncAndVerifyStateOutput(config, messages, configuredCatalog, true);
+
+    // assert the removed field is missing on the new messages
+    actualMessages = retrieveNormalizedRecords(catalog, defaultSchema);
+
+    // We expect all the of messages to be missing the removed column after normalization.
+    final List<AirbyteMessage> expectedMessages = messages.stream().map((message) -> {
+      if (message.getRecord() != null) {
+        ((ObjectNode) message.getRecord().getData()).remove("HKD");
+      }
+      return message;
+    }).collect(Collectors.toList());
+    assertSameMessages(expectedMessages, actualMessages, true);
   }
 
   /**
@@ -909,12 +948,12 @@ public abstract class DestinationAcceptanceTest {
     // 1. First, it tests if connection to the destination works.
     dbtConfig.withDbtArguments("debug");
     if (!runner.run(JOB_ID, JOB_ATTEMPT, transformationRoot, config, null, dbtConfig)) {
-      throw new WorkerException("dbt debug Failed.");
+      throw new TestHarnessException("dbt debug Failed.");
     }
     // 2. Install any dependencies packages, if any
     dbtConfig.withDbtArguments("deps");
     if (!runner.transform(JOB_ID, JOB_ATTEMPT, transformationRoot, config, null, dbtConfig)) {
-      throw new WorkerException("dbt deps Failed.");
+      throw new TestHarnessException("dbt deps Failed.");
     }
     // 3. It contains seeds that includes some (fake) raw data from a fictional app as CSVs data sets.
     // This materializes the CSVs as tables in your target schema.
@@ -922,19 +961,19 @@ public abstract class DestinationAcceptanceTest {
     // already in your warehouse.
     dbtConfig.withDbtArguments("seed");
     if (!runner.transform(JOB_ID, JOB_ATTEMPT, transformationRoot, config, null, dbtConfig)) {
-      throw new WorkerException("dbt seed Failed.");
+      throw new TestHarnessException("dbt seed Failed.");
     }
     // 4. Run the models:
     // Note: If this steps fails, it might mean that you need to make small changes to the SQL in the
     // models folder to adjust for the flavor of SQL of your target database.
     dbtConfig.withDbtArguments("run");
     if (!runner.transform(JOB_ID, JOB_ATTEMPT, transformationRoot, config, null, dbtConfig)) {
-      throw new WorkerException("dbt run Failed.");
+      throw new TestHarnessException("dbt run Failed.");
     }
     // 5. Test the output of the models and tables have been properly populated:
     dbtConfig.withDbtArguments("test");
     if (!runner.transform(JOB_ID, JOB_ATTEMPT, transformationRoot, config, null, dbtConfig)) {
-      throw new WorkerException("dbt test Failed.");
+      throw new TestHarnessException("dbt test Failed.");
     }
     // 6. Generate dbt documentation for the project:
     // This step is commented out because it takes a long time, but is not vital for Airbyte
@@ -969,7 +1008,7 @@ public abstract class DestinationAcceptanceTest {
         .withDockerImage("fishtownanalytics/dbt:0.19.1")
         .withDbtArguments("debug");
     if (!runner.run(JOB_ID, JOB_ATTEMPT, transformationRoot, config, null, dbtConfig)) {
-      throw new WorkerException("dbt debug Failed.");
+      throw new TestHarnessException("dbt debug Failed.");
     }
 
     dbtConfig.withDbtArguments("test");
@@ -1204,17 +1243,17 @@ public abstract class DestinationAcceptanceTest {
             testCaseId));
   }
 
-  private ConnectorSpecification runSpec() throws WorkerException {
+  private ConnectorSpecification runSpec() throws TestHarnessException {
     return convertProtocolObject(
-        new DefaultGetSpecWorker(
-            new AirbyteIntegrationLauncher(JOB_ID, JOB_ATTEMPT, getImageName(), processFactory, null, false))
+        new DefaultGetSpecTestHarness(
+            new AirbyteIntegrationLauncher(JOB_ID, JOB_ATTEMPT, getImageName(), processFactory, null, null, false, new EnvVariableFeatureFlags()))
                 .run(new JobGetSpecConfig().withDockerImage(getImageName()), jobRoot).getSpec(),
         ConnectorSpecification.class);
   }
 
-  protected StandardCheckConnectionOutput runCheck(final JsonNode config) throws WorkerException {
-    return new DefaultCheckConnectionWorker(
-        new AirbyteIntegrationLauncher(JOB_ID, JOB_ATTEMPT, getImageName(), processFactory, null, false),
+  protected StandardCheckConnectionOutput runCheck(final JsonNode config) throws TestHarnessException {
+    return new DefaultCheckConnectionTestHarness(
+        new AirbyteIntegrationLauncher(JOB_ID, JOB_ATTEMPT, getImageName(), processFactory, null, null, false, new EnvVariableFeatureFlags()),
         mConnectorConfigUpdater)
             .run(new StandardCheckConnectionInput().withConnectionConfiguration(config), jobRoot)
             .getCheckConnection();
@@ -1223,8 +1262,8 @@ public abstract class DestinationAcceptanceTest {
   protected StandardCheckConnectionOutput.Status runCheckWithCatchedException(
                                                                               final JsonNode config) {
     try {
-      final StandardCheckConnectionOutput standardCheckConnectionOutput = new DefaultCheckConnectionWorker(
-          new AirbyteIntegrationLauncher(JOB_ID, JOB_ATTEMPT, getImageName(), processFactory, null, false),
+      final StandardCheckConnectionOutput standardCheckConnectionOutput = new DefaultCheckConnectionTestHarness(
+          new AirbyteIntegrationLauncher(JOB_ID, JOB_ATTEMPT, getImageName(), processFactory, null, null, false, new EnvVariableFeatureFlags()),
           mConnectorConfigUpdater)
               .run(new StandardCheckConnectionInput().withConnectionConfiguration(config), jobRoot)
               .getCheckConnection();
@@ -1237,7 +1276,7 @@ public abstract class DestinationAcceptanceTest {
 
   protected AirbyteDestination getDestination() {
     return new DefaultAirbyteDestination(
-        new AirbyteIntegrationLauncher(JOB_ID, JOB_ATTEMPT, getImageName(), processFactory, null, false));
+        new AirbyteIntegrationLauncher(JOB_ID, JOB_ATTEMPT, getImageName(), processFactory, null, null, false, new EnvVariableFeatureFlags()));
   }
 
   protected void runSyncAndVerifyStateOutput(final JsonNode config,
@@ -1321,7 +1360,7 @@ public abstract class DestinationAcceptanceTest {
     if (!runner.normalize(JOB_ID, JOB_ATTEMPT, normalizationRoot,
         destinationConfig.getDestinationConnectionConfiguration(),
         destinationConfig.getCatalog(), null)) {
-      throw new WorkerException("Normalization Failed.");
+      throw new TestHarnessException("Normalization Failed.");
     }
     runner.close();
     return destinationOutput;
@@ -1717,7 +1756,7 @@ public abstract class DestinationAcceptanceTest {
 
   private void runAndCheck(final AirbyteCatalog catalog, final ConfiguredAirbyteCatalog configuredCatalog, final List<AirbyteMessage> messages)
       throws Exception {
-    if (supportsNormalization()) {
+    if (normalizationFromDefinition()) {
       LOGGER.info("Normalization is supported! Run test with normalization.");
       runAndCheckWithNormalization(messages, configuredCatalog, catalog);
     } else {
@@ -1781,9 +1820,13 @@ public abstract class DestinationAcceptanceTest {
   @Getter
   public static class SpecialNumericTypes {
 
+    @Builder.Default
     boolean supportIntegerNan = false;
+    @Builder.Default
     boolean supportNumberNan = false;
+    @Builder.Default
     boolean supportIntegerInfinity = false;
+    @Builder.Default
     boolean supportNumberInfinity = false;
 
   }
