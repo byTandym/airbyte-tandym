@@ -210,7 +210,7 @@ streams:
         transformations:
             - type: AddFields
               fields:
-                - path: [ "_embedded", "funding-sources", "customerid" ]
+                - path: [ "customerid" ]
                   value: '{{ stream_slice["id"] }}'
       paginator:
         type: NoPagination
