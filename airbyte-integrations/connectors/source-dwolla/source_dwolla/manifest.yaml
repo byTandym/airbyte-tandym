@@ -207,6 +207,11 @@ streams:
           field_path:
             - _embedded
             - funding-sources
+        transformations:
+            - type: AddFields
+              fields:
+                - path: [ "customerid" ]
+                  value: '{{ stream_slice["id"] }}'
       paginator:
         type: NoPagination
       partition_router:
