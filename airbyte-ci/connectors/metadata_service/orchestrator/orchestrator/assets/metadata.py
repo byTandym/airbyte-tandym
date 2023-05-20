@@ -1,14 +1,14 @@
 import pandas as pd
 import numpy as np
 from typing import List
-from dagster import Output, asset
+from dagster import Output, asset, OpExecutionContext
 import yaml
 
-from metadata_service.models.generated.ConnectorMetadataDefinitionV1 import ConnectorMetadataDefinitionV1
+from metadata_service.models.generated.ConnectorMetadataDefinitionV0 import ConnectorMetadataDefinitionV0
 
 from orchestrator.utils.object_helpers import are_values_equal, merge_values
 from orchestrator.utils.dagster_helpers import OutputDataFrame, output_dataframe
-from orchestrator.models.metadata import PartialMetadataDefinition
+from orchestrator.models.metadata import PartialMetadataDefinition, MetadataDefinition
 
 GROUP_NAME = "metadata"
 
@@ -164,7 +164,7 @@ def merge_into_metadata_definitions(
 
 def validate_metadata(metadata: PartialMetadataDefinition) -> tuple[bool, str]:
     try:
-        ConnectorMetadataDefinitionV1.parse_obj(metadata)
+        ConnectorMetadataDefinitionV0.parse_obj(metadata)
         return True, None
     except Exception as e:
         return False, str(e)
@@ -173,54 +173,15 @@ def validate_metadata(metadata: PartialMetadataDefinition) -> tuple[bool, str]:
 # ASSETS
 
 
-@asset(group_name=GROUP_NAME)
-def valid_metadata_report_dataframe(overrode_metadata_definitions: List[PartialMetadataDefinition]) -> OutputDataFrame:
-    """
-    Validates the metadata definitions and returns a dataframe with the results
-    """
-
-    result = []
-
-    for metadata in overrode_metadata_definitions:
-        valid, error_msg = metadata.is_valid
-        result.append(
-            {
-                "definitionId": metadata["data"]["definitionId"],
-                "name": metadata["data"]["name"],
-                "dockerRepository": metadata["data"]["dockerRepository"],
-                "is_metadata_valid": valid,
-                "error_msg": error_msg,
-            }
-        )
-
-    result_df = pd.DataFrame(result)
-
-    return output_dataframe(result_df)
-
-
-@asset(group_name=GROUP_NAME)
-def registry_derived_metadata_definitions(
-    cloud_sources_dataframe, cloud_destinations_dataframe, oss_sources_dataframe, oss_destinations_dataframe
-) -> Output[List[PartialMetadataDefinition]]:
-    sources_metadata_list = merge_into_metadata_definitions("sourceDefinitionId", "source", oss_sources_dataframe, cloud_sources_dataframe)
-    destinations_metadata_list = merge_into_metadata_definitions(
-        "destinationDefinitionId", "destination", oss_destinations_dataframe, cloud_destinations_dataframe
-    )
-    all_definitions = sources_metadata_list + destinations_metadata_list
-    return Output(all_definitions, metadata={"count": len(all_definitions)})
-
-
-@asset(required_resource_keys={"metadata_file_blobs"}, group_name=GROUP_NAME)
-def metadata_definitions(context):
-    metadata_file_blobs = context.resources.metadata_file_blobs
+@asset(required_resource_keys={"latest_metadata_file_blobs"}, group_name=GROUP_NAME)
+def metadata_definitions(context: OpExecutionContext) -> List[MetadataDefinition]:
+    latest_metadata_file_blobs = context.resources.latest_metadata_file_blobs
 
     metadata_definitions = []
-    for blob in metadata_file_blobs:
+    for blob in latest_metadata_file_blobs:
         yaml_string = blob.download_as_string().decode("utf-8")
         metadata_dict = yaml.safe_load(yaml_string)
-        metadata_def = ConnectorMetadataDefinitionV1.parse_obj(metadata_dict)
+        metadata_def = MetadataDefinition.parse_obj(metadata_dict)
         metadata_definitions.append(metadata_def)
 
-    metadata_definitions_df = pd.DataFrame(metadata_definitions)
-
-    return output_dataframe(metadata_definitions_df)
+    return metadata_definitions
