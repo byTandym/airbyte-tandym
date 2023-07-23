@@ -7,7 +7,6 @@ WORKDIR /airbyte/integration_code
 # upgrade pip to the latest version
 RUN apk --no-cache upgrade \
     && pip install --upgrade pip \
-    && pip install --upgrade wheel \
     && apk --no-cache add tzdata build-base
 
 
