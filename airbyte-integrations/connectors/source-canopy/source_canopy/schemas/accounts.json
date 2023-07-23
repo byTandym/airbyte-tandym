@@ -239,50 +239,6 @@
         "controller"
       ]
     },
-    "metro2_config": {
-      "type": "object",
-      "properties": {
-        "bloom_metadata": {
-          "type": "object",
-          "properties": {
-            "address_type": {
-              "type": "string"
-            },
-            "residence_type": {
-              "type": "string"
-            },
-            "account_designations": {
-              "type": "array",
-              "items": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "account_id": {
-                      "type": "string"
-                    },
-                    "designation": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "account_id",
-                    "designation"
-                  ]
-                }
-              ]
-            }
-          },
-          "required": [
-            "address_type",
-            "residence_type",
-            "account_designations"
-          ]
-        }
-      },
-      "required": [
-        "bloom_metadata"
-      ]
-    },
     "customer_account_role": {
       "type": "string"
     },
