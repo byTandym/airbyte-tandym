@@ -1,6 +1,156 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
+  "properties": {
+    "address_line_one": {
+      "type": "string"
+    },
+    "address_line_two": {
+      "type": "string"
+    },
+    "address_city": {
+      "type": "string"
+    },
+    "address_state": {
+      "type": "string"
+    },
+    "address_zip": {
+      "type": "string"
+    },
+    "address_country_code": {
+      "type": "string"
+    },
+    "name_prefix": {
+      "type": "string"
+    },
+    "name_first": {
+      "type": "string"
+    },
+    "name_middle": {
+      "type": "string"
+    },
+    "name_last": {
+      "type": "string"
+    },
+    "name_suffix": {
+      "type": "string"
+    },
+    "passport": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "number",
+        "country"
+      ]
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    },
+    "is_borrower_portal_user": {
+      "type": "boolean"
+    },
+    "customer_type": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean"
+    },
+    "verification_status": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "phone_number": {
+      "type": "string"
+    },
+    "ssn": {
+      "type": "string"
+    },
+    "international_customer_id": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "date_of_birth": {
+      "type": "string"
+    },
+    "customer_balances": {
+      "type": "object",
+      "properties": {
+        "num_active_accounts": {
+          "type": "integer"
+        },
+        "total_balance_cents": {
+          "type": "integer"
+        },
+        "principal_cents": {
+          "type": "integer"
+        },
+        "interest_balance_cents": {
+          "type": "integer"
+        },
+        "am_interest_balance_cents": {
+          "type": "integer"
+        },
+        "deferred_interest_balance_cents": {
+          "type": "integer"
+        },
+        "am_deferred_interest_balance_cents": {
+          "type": "integer"
+        },
+        "fees_balance_cents": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "num_active_accounts",
+        "total_balance_cents",
+        "principal_cents",
+        "interest_balance_cents",
+        "am_interest_balance_cents",
+        "deferred_interest_balance_cents",
+        "am_deferred_interest_balance_cents",
+        "fees_balance_cents"
+      ]
+    },
+    "business_details": {
+      "type": "object",
+      "properties": {
+        "business_legal_name": {
+          "type": "string"
+        },
+        "doing_business_as": {
+          "type": "string"
+        },
+        "business_ein": {
+          "type": "string"
+        },
+        "business_type": {
+          "type": "string"
+        },
+        "business_classification_id": {
+          "type": "string"
+        },
+        "website": {
+          "type": "string"
+        },
+        "controller": {
+          "type": "object",
           "properties": {
             "address_line_one": {
               "type": "string"
@@ -50,27 +200,6 @@
                 "country"
               ]
             },
-            "customer_id": {
-              "type": "string"
-            },
-            "created_at": {
-              "type": "string"
-            },
-            "updated_at": {
-              "type": "string"
-            },
-            "is_borrower_portal_user": {
-              "type": "boolean"
-            },
-            "customer_type": {
-              "type": "string"
-            },
-            "is_active": {
-              "type": "boolean"
-            },
-            "verification_status": {
-              "type": "string"
-            },
             "title": {
               "type": "string"
             },
@@ -79,457 +208,1021 @@
             },
             "ssn": {
               "type": "string"
-            },
-            "international_customer_id": {
+            }
+          },
+          "required": [
+            "address_line_one",
+            "address_line_two",
+            "address_city",
+            "address_state",
+            "address_zip",
+            "address_country_code",
+            "name_prefix",
+            "name_first",
+            "name_middle",
+            "name_last",
+            "name_suffix",
+            "passport",
+            "title",
+            "phone_number",
+            "ssn"
+          ]
+        }
+      },
+      "required": [
+        "business_legal_name",
+        "doing_business_as",
+        "business_ein",
+        "business_type",
+        "business_classification_id",
+        "website",
+        "controller"
+      ]
+    },
+    "metro2_config": {
+      "type": "object",
+      "properties": {
+        "bloom_metadata": {
+          "type": "object",
+          "properties": {
+            "address_type": {
               "type": "string"
             },
-            "email": {
+            "residence_type": {
               "type": "string"
             },
-            "date_of_birth": {
-              "type": "string"
-            },
-            "customer_balances": {
-              "type": "object",
-              "properties": {
-                "num_active_accounts": {
-                  "type": "integer"
-                },
-                "total_balance_cents": {
-                  "type": "integer"
-                },
-                "principal_cents": {
-                  "type": "integer"
-                },
-                "interest_balance_cents": {
-                  "type": "integer"
-                },
-                "am_interest_balance_cents": {
-                  "type": "integer"
-                },
-                "deferred_interest_balance_cents": {
-                  "type": "integer"
-                },
-                "am_deferred_interest_balance_cents": {
-                  "type": "integer"
-                },
-                "fees_balance_cents": {
-                  "type": "integer"
-                }
-              },
-              "required": [
-                "num_active_accounts",
-                "total_balance_cents",
-                "principal_cents",
-                "interest_balance_cents",
-                "am_interest_balance_cents",
-                "deferred_interest_balance_cents",
-                "am_deferred_interest_balance_cents",
-                "fees_balance_cents"
-              ]
-            },
-            "business_details": {
-              "type": "object",
-              "properties": {
-                "business_legal_name": {
-                  "type": "string"
-                },
-                "doing_business_as": {
-                  "type": "string"
-                },
-                "business_ein": {
-                  "type": "string"
-                },
-                "business_type": {
-                  "type": "string"
-                },
-                "business_classification_id": {
-                  "type": "string"
-                },
-                "website": {
-                  "type": "string"
-                },
-                "controller": {
+            "account_designations": {
+              "type": "array",
+              "items": [
+                {
                   "type": "object",
                   "properties": {
-                    "address_line_one": {
+                    "account_id": {
                       "type": "string"
                     },
-                    "address_line_two": {
-                      "type": "string"
-                    },
-                    "address_city": {
-                      "type": "string"
-                    },
-                    "address_state": {
-                      "type": "string"
-                    },
-                    "address_zip": {
-                      "type": "string"
-                    },
-                    "address_country_code": {
-                      "type": "string"
-                    },
-                    "name_prefix": {
-                      "type": "string"
-                    },
-                    "name_first": {
-                      "type": "string"
-                    },
-                    "name_middle": {
-                      "type": "string"
-                    },
-                    "name_last": {
-                      "type": "string"
-                    },
-                    "name_suffix": {
-                      "type": "string"
-                    },
-                    "passport": {
-                      "type": "object",
-                      "properties": {
-                        "number": {
-                          "type": "string"
-                        },
-                        "country": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "number",
-                        "country"
-                      ]
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "phone_number": {
-                      "type": "string"
-                    },
-                    "ssn": {
+                    "designation": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "address_line_one",
-                    "address_line_two",
-                    "address_city",
-                    "address_state",
-                    "address_zip",
-                    "address_country_code",
-                    "name_prefix",
-                    "name_first",
-                    "name_middle",
-                    "name_last",
-                    "name_suffix",
-                    "passport",
-                    "title",
-                    "phone_number",
-                    "ssn"
+                    "account_id",
+                    "designation"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "address_type",
+            "residence_type",
+            "account_designations"
+          ]
+        }
+      },
+      "required": [
+        "bloom_metadata"
+      ]
+    },
+    "customer_account_role": {
+      "type": "string"
+    },
+    "customer_account_external_id": {
+      "type": "string"
+    },
+    "account": {
+      "type": "object",
+      "properties": {
+        "account_id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "effective_at": {
+          "type": "string"
+        },
+        "account_overview": {
+          "type": "object",
+          "properties": {
+            "account_status": {
+              "type": "string"
+            },
+            "account_status_subtype": {
+              "type": "string"
+            },
+            "is_active_scra": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "account_status",
+            "account_status_subtype",
+            "is_active_scra"
+          ]
+        },
+        "account_product": {
+          "type": "object",
+          "properties": {
+            "product_id": {
+              "type": "string"
+            },
+            "product_overview": {
+              "type": "object",
+              "properties": {
+                "product_name": {
+                  "type": "string"
+                },
+                "product_color": {
+                  "type": "string"
+                },
+                "product_short_description": {
+                  "type": "string"
+                },
+                "product_long_description": {
+                  "type": "string"
+                },
+                "product_time_zone": {
+                  "type": "string"
+                },
+                "product_type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "product_name",
+                "product_color",
+                "product_short_description",
+                "product_long_description",
+                "product_time_zone",
+                "product_type"
+              ]
+            },
+            "product_lifecycle": {
+              "type": "object",
+              "properties": {
+                "late_fee_impl_cents": {
+                  "type": "integer"
+                },
+                "default_product_late_fee_cents": {
+                  "type": "integer"
+                },
+                "payment_reversal_fee_impl_cents": {
+                  "type": "integer"
+                },
+                "default_product_payment_reversal_fee_cents": {
+                  "type": "integer"
+                },
+                "origination_fee_impl_cents": {
+                  "type": "integer"
+                },
+                "origination_fee_percent": {
+                  "type": "number"
+                },
+                "is_origination_fee_lesser_value": {
+                  "type": "boolean"
+                },
+                "is_origination_fee_amortized": {
+                  "type": "boolean"
+                },
+                "recurring_fees": {
+                  "type": "array",
+                  "items": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "recurring_fee_interval": {
+                          "type": "string"
+                        },
+                        "recurring_fee_amount_cents": {
+                          "type": "integer"
+                        },
+                        "initial_delay_offset": {
+                          "type": "string"
+                        },
+                        "is_fee_interval_floored": {
+                          "type": "boolean"
+                        },
+                        "recurring_fee_label": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "recurring_fee_interval",
+                        "recurring_fee_amount_cents",
+                        "initial_delay_offset",
+                        "is_fee_interval_floored",
+                        "recurring_fee_label"
+                      ]
+                    }
+                  ]
+                },
+                "loan_end_date": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "late_fee_impl_cents",
+                "default_product_late_fee_cents",
+                "payment_reversal_fee_impl_cents",
+                "default_product_payment_reversal_fee_cents",
+                "origination_fee_impl_cents",
+                "origination_fee_percent",
+                "is_origination_fee_lesser_value",
+                "is_origination_fee_amortized",
+                "recurring_fees",
+                "loan_end_date"
+              ]
+            },
+            "promo_overview": {
+              "type": "object",
+              "properties": {
+                "promo_purchase_window_inclusive_start": {
+                  "type": "string"
+                },
+                "promo_purchase_window_exclusive_end": {
+                  "type": "string"
+                },
+                "promo_inclusive_start": {
+                  "type": "string"
+                },
+                "promo_exclusive_end": {
+                  "type": "string"
+                },
+                "promo_impl_interest_rate_percent": {
+                  "type": "number"
+                },
+                "default_product_promo_interest_rate": {
+                  "type": "number"
+                },
+                "promo_len": {
+                  "type": "integer"
+                },
+                "default_product_promo_len": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "promo_purchase_window_inclusive_start",
+                "promo_purchase_window_exclusive_end",
+                "promo_inclusive_start",
+                "promo_exclusive_end",
+                "promo_impl_interest_rate_percent",
+                "default_product_promo_interest_rate",
+                "promo_len",
+                "default_product_promo_len"
+              ]
+            },
+            "post_promo_overview": {
+              "type": "object",
+              "properties": {
+                "post_promo_inclusive_start": {
+                  "type": "string"
+                },
+                "post_promo_exclusive_end": {
+                  "type": "string"
+                },
+                "post_promo_impl_interest_rate_percent": {
+                  "type": "number"
+                },
+                "default_product_post_promo_interest_rate": {
+                  "type": "number"
+                },
+                "post_promo_len": {
+                  "type": "integer"
+                },
+                "default_product_post_promo_len": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "post_promo_inclusive_start",
+                "post_promo_exclusive_end",
+                "post_promo_impl_interest_rate_percent",
+                "default_product_post_promo_interest_rate",
+                "post_promo_len",
+                "default_product_post_promo_len"
+              ]
+            },
+            "product_duration_information": {
+              "type": "object",
+              "properties": {
+                "promo_len": {
+                  "type": "integer"
+                },
+                "promo_purchase_window_len": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "promo_len",
+                "promo_purchase_window_len"
+              ]
+            }
+          },
+          "required": [
+            "product_id",
+            "product_overview",
+            "product_lifecycle",
+            "promo_overview",
+            "post_promo_overview",
+            "product_duration_information"
+          ]
+        },
+        "external_fields": {
+          "type": "array",
+          "items": [
+            {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
+            }
+          ]
+        },
+        "min_pay_due_cents": {
+          "type": "object",
+          "properties": {
+            "statement_min_pay_cents": {
+              "type": "integer"
+            },
+            "min_pay_cents": {
+              "type": "integer"
+            },
+            "min_pay_due_at": {
+              "type": "string"
+            },
+            "graced_due_date": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "statement_min_pay_cents",
+            "min_pay_cents",
+            "min_pay_due_at",
+            "graced_due_date"
+          ]
+        },
+        "additional_min_pay_details": {
+          "type": "object",
+          "properties": {
+            "min_pay_fees_cents": {
+              "type": "integer"
+            },
+            "current_min_pay_cents": {
+              "type": "integer"
+            },
+            "unpaid_min_pay_cents": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "min_pay_fees_cents",
+            "current_min_pay_cents",
+            "unpaid_min_pay_cents"
+          ]
+        },
+        "additional_statement_min_pay_details": {
+          "type": "object",
+          "properties": {
+            "statement_min_pay_charges_principal_cents": {
+              "type": "integer"
+            },
+            "statement_min_pay_interest_cents": {
+              "type": "integer"
+            },
+            "statement_min_pay_am_interest_cents": {
+              "type": "integer"
+            },
+            "statement_min_pay_deferred_cents": {
+              "type": "integer"
+            },
+            "statement_min_pay_am_deferred_interest_cents": {
+              "type": "integer"
+            },
+            "statement_min_pay_fees_cents": {
+              "type": "integer"
+            },
+            "statement_payments_cents": {
+              "type": "integer"
+            },
+            "previous_statement_min_pay_cents": {
+              "type": "integer"
+            },
+            "statement_current_min_pay_cents": {
+              "type": "integer"
+            },
+            "statement_unpaid_min_pay_cents": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "statement_min_pay_charges_principal_cents",
+            "statement_min_pay_interest_cents",
+            "statement_min_pay_am_interest_cents",
+            "statement_min_pay_deferred_cents",
+            "statement_min_pay_am_deferred_interest_cents",
+            "statement_min_pay_fees_cents",
+            "statement_payments_cents",
+            "previous_statement_min_pay_cents",
+            "statement_current_min_pay_cents",
+            "statement_unpaid_min_pay_cents"
+          ]
+        },
+        "payment_processor_config": {
+          "type": "object",
+          "properties": {
+            "ach": {
+              "type": "object",
+              "properties": {
+                "payment_processor_name": {
+                  "type": "string"
+                },
+                "repay_config": {
+                  "type": "object",
+                  "properties": {
+                    "ach_token": {
+                      "type": "string"
+                    },
+                    "last_four": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "ach_token",
+                    "last_four"
+                  ]
+                },
+                "dwolla_config": {
+                  "type": "object",
+                  "properties": {
+                    "ach_token": {
+                      "type": "string"
+                    },
+                    "last_four": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "ach_token",
+                    "last_four"
+                  ]
+                },
+                "modern_treasury_config": {
+                  "type": "object",
+                  "properties": {
+                    "ach_token": {
+                      "type": "string"
+                    },
+                    "last_four": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "ach_token",
+                    "last_four"
+                  ]
+                },
+                "canopy_nacha_config": {
+                  "type": "object",
+                  "properties": {
+                    "bank_routing_number": {
+                      "type": "string"
+                    },
+                    "bank_account_number": {
+                      "type": "string"
+                    },
+                    "bank_account_type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "bank_routing_number",
+                    "bank_account_number",
+                    "bank_account_type"
+                  ]
+                },
+                "stripe_config": {
+                  "type": "object",
+                  "properties": {
+                    "customer_id": {
+                      "type": "string"
+                    },
+                    "source_id": {
+                      "type": "string"
+                    },
+                    "external_fields": {
+                      "type": "object",
+                      "properties": {
+                        "additionalProp": {
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "additionalProp"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "customer_id",
+                    "source_id",
+                    "external_fields"
+                  ]
+                },
+                "galileo_config": {
+                  "type": "object",
+                  "properties": {
+                    "plaid_processor_token": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "plaid_processor_token"
                   ]
                 }
               },
               "required": [
-                "business_legal_name",
-                "doing_business_as",
-                "business_ein",
-                "business_type",
-                "business_classification_id",
-                "website",
-                "controller"
+                "payment_processor_name",
+                "repay_config",
+                "dwolla_config",
+                "modern_treasury_config",
+                "canopy_nacha_config",
+                "stripe_config",
+                "galileo_config"
               ]
             },
-            "metro2_config": {
+            "debit_card": {
               "type": "object",
               "properties": {
-                "bloom_metadata": {
+                "payment_processor_name": {
+                  "type": "string"
+                },
+                "repay_config": {
                   "type": "object",
                   "properties": {
-                    "address_type": {
+                    "card_token": {
                       "type": "string"
                     },
-                    "residence_type": {
+                    "last_four": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "card_token",
+                    "last_four"
+                  ]
+                },
+                "authorize_net_config": {
+                  "type": "object",
+                  "properties": {
+                    "customer_profile_id": {
                       "type": "string"
                     },
-                    "account_designations": {
+                    "customer_payment_profile_ids": {
                       "type": "array",
                       "items": [
                         {
-                          "type": "object",
-                          "properties": {
-                            "account_id": {
-                              "type": "string"
-                            },
-                            "designation": {
+                          "type": "array",
+                          "items": [
+                            {
                               "type": "string"
                             }
-                          },
-                          "required": [
-                            "account_id",
-                            "designation"
                           ]
                         }
                       ]
                     }
                   },
                   "required": [
-                    "address_type",
-                    "residence_type",
-                    "account_designations"
+                    "customer_profile_id",
+                    "customer_payment_profile_ids"
                   ]
                 }
               },
               "required": [
-                "bloom_metadata"
+                "payment_processor_name",
+                "repay_config",
+                "authorize_net_config"
               ]
             },
-            "customer_account_role": {
-              "type": "string"
-            },
-            "customer_account_external_id": {
-              "type": "string"
-            },
-            "account": {
+            "credit_card": {
               "type": "object",
               "properties": {
-                "account_id": {
+                "payment_processor_name": {
                   "type": "string"
                 },
-                "created_at": {
-                  "type": "string"
-                },
-                "updated_at": {
-                  "type": "string"
-                },
-                "effective_at": {
-                  "type": "string"
-                },
-                "account_overview": {
+                "checkout_config": {
                   "type": "object",
                   "properties": {
-                    "account_status": {
+                    "source_id": {
                       "type": "string"
                     },
-                    "account_status_subtype": {
+                    "card_token": {
                       "type": "string"
                     },
-                    "is_active_scra": {
+                    "last_four": {
+                      "type": "string"
+                    },
+                    "expires_on": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "account_status",
-                    "account_status_subtype",
-                    "is_active_scra"
+                    "source_id",
+                    "card_token",
+                    "last_four",
+                    "expires_on"
                   ]
+                }
+              },
+              "required": [
+                "payment_processor_name",
+                "checkout_config"
+              ]
+            },
+            "autopay_enabled": {
+              "type": "boolean"
+            },
+            "autopay_configs": {
+              "type": "object",
+              "properties": {
+                "autopay_method": {
+                  "type": "string"
                 },
-                "account_product": {
-                  "type": "object",
-                  "properties": {
-                    "product_id": {
-                      "type": "string"
-                    },
-                    "product_overview": {
+                "autopay_fixed_amount_cents": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "autopay_method",
+                "autopay_fixed_amount_cents"
+              ]
+            },
+            "default_payment_processor_method": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "ach",
+            "debit_card",
+            "credit_card",
+            "autopay_enabled",
+            "autopay_configs",
+            "default_payment_processor_method"
+          ]
+        },
+        "disbursements_config": {
+          "type": "object",
+          "properties": {
+            "disbursement_source_payout_entity_id": {
+              "type": "integer"
+            },
+            "disbursement_split_percentages": {
+              "type": "object",
+              "properties": {
+                "principal": {
+                  "type": "array",
+                  "items": [
+                    {
                       "type": "object",
                       "properties": {
-                        "product_name": {
-                          "type": "string"
-                        },
-                        "product_color": {
-                          "type": "string"
-                        },
-                        "product_short_description": {
-                          "type": "string"
-                        },
-                        "product_long_description": {
-                          "type": "string"
-                        },
-                        "product_time_zone": {
-                          "type": "string"
-                        },
-                        "product_type": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "product_name",
-                        "product_color",
-                        "product_short_description",
-                        "product_long_description",
-                        "product_time_zone",
-                        "product_type"
-                      ]
-                    },
-                    "product_lifecycle": {
-                      "type": "object",
-                      "properties": {
-                        "late_fee_impl_cents": {
+                        "payout_entity_id": {
                           "type": "integer"
                         },
-                        "default_product_late_fee_cents": {
-                          "type": "integer"
-                        },
-                        "payment_reversal_fee_impl_cents": {
-                          "type": "integer"
-                        },
-                        "default_product_payment_reversal_fee_cents": {
-                          "type": "integer"
-                        },
-                        "origination_fee_impl_cents": {
-                          "type": "integer"
-                        },
-                        "origination_fee_percent": {
-                          "type": "number"
-                        },
-                        "is_origination_fee_lesser_value": {
-                          "type": "boolean"
-                        },
-                        "is_origination_fee_amortized": {
-                          "type": "boolean"
-                        },
-                        "recurring_fees": {
-                          "type": "array",
-                          "items": [
-                            {
-                              "type": "object",
-                              "properties": {
-                                "recurring_fee_interval": {
-                                  "type": "string"
-                                },
-                                "recurring_fee_amount_cents": {
-                                  "type": "integer"
-                                },
-                                "initial_delay_offset": {
-                                  "type": "string"
-                                },
-                                "is_fee_interval_floored": {
-                                  "type": "boolean"
-                                },
-                                "recurring_fee_label": {
-                                  "type": "string"
-                                }
-                              },
-                              "required": [
-                                "recurring_fee_interval",
-                                "recurring_fee_amount_cents",
-                                "initial_delay_offset",
-                                "is_fee_interval_floored",
-                                "recurring_fee_label"
-                              ]
-                            }
-                          ]
-                        },
-                        "loan_end_date": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "late_fee_impl_cents",
-                        "default_product_late_fee_cents",
-                        "payment_reversal_fee_impl_cents",
-                        "default_product_payment_reversal_fee_cents",
-                        "origination_fee_impl_cents",
-                        "origination_fee_percent",
-                        "is_origination_fee_lesser_value",
-                        "is_origination_fee_amortized",
-                        "recurring_fees",
-                        "loan_end_date"
-                      ]
-                    },
-                    "promo_overview": {
-                      "type": "object",
-                      "properties": {
-                        "promo_purchase_window_inclusive_start": {
-                          "type": "string"
-                        },
-                        "promo_purchase_window_exclusive_end": {
-                          "type": "string"
-                        },
-                        "promo_inclusive_start": {
-                          "type": "string"
-                        },
-                        "promo_exclusive_end": {
-                          "type": "string"
-                        },
-                        "promo_impl_interest_rate_percent": {
-                          "type": "number"
-                        },
-                        "default_product_promo_interest_rate": {
-                          "type": "number"
-                        },
-                        "promo_len": {
-                          "type": "integer"
-                        },
-                        "default_product_promo_len": {
+                        "split_percent": {
                           "type": "integer"
                         }
                       },
                       "required": [
-                        "promo_purchase_window_inclusive_start",
-                        "promo_purchase_window_exclusive_end",
-                        "promo_inclusive_start",
-                        "promo_exclusive_end",
-                        "promo_impl_interest_rate_percent",
-                        "default_product_promo_interest_rate",
-                        "promo_len",
-                        "default_product_promo_len"
-                      ]
-                    },
-                    "post_promo_overview": {
-                      "type": "object",
-                      "properties": {
-                        "post_promo_inclusive_start": {
-                          "type": "string"
-                        },
-                        "post_promo_exclusive_end": {
-                          "type": "string"
-                        },
-                        "post_promo_impl_interest_rate_percent": {
-                          "type": "number"
-                        },
-                        "default_product_post_promo_interest_rate": {
-                          "type": "number"
-                        },
-                        "post_promo_len": {
-                          "type": "integer"
-                        },
-                        "default_product_post_promo_len": {
-                          "type": "integer"
-                        }
-                      },
-                      "required": [
-                        "post_promo_inclusive_start",
-                        "post_promo_exclusive_end",
-                        "post_promo_impl_interest_rate_percent",
-                        "default_product_post_promo_interest_rate",
-                        "post_promo_len",
-                        "default_product_post_promo_len"
-                      ]
-                    },
-                    "product_duration_information": {
-                      "type": "object",
-                      "properties": {
-                        "promo_len": {
-                          "type": "integer"
-                        },
-                        "promo_purchase_window_len": {
-                          "type": "integer"
-                        }
-                      },
-                      "required": [
-                        "promo_len",
-                        "promo_purchase_window_len"
+                        "payout_entity_id",
+                        "split_percent"
                       ]
                     }
-                  },
-                  "required": [
-                    "product_id",
-                    "product_overview",
-                    "product_lifecycle",
-                    "promo_overview",
-                    "post_promo_overview",
-                    "product_duration_information"
                   ]
+                }
+              },
+              "required": [
+                "principal"
+              ]
+            }
+          },
+          "required": [
+            "disbursement_source_payout_entity_id",
+            "disbursement_split_percentages"
+          ]
+        },
+        "payouts_config": {
+          "type": "object",
+          "properties": {
+            "payout_split_percentages": {
+              "type": "object",
+              "properties": {
+                "principal": {
+                  "type": "array",
+                  "items": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "payout_entity_id": {
+                          "type": "integer"
+                        },
+                        "split_percent": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "payout_entity_id",
+                        "split_percent"
+                      ]
+                    }
+                  ]
+                },
+                "interest": {
+                  "type": "array",
+                  "items": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "payout_entity_id": {
+                          "type": "integer"
+                        },
+                        "split_percent": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "payout_entity_id",
+                        "split_percent"
+                      ]
+                    }
+                  ]
+                },
+                "fee": {
+                  "type": "array",
+                  "items": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "payout_entity_id": {
+                          "type": "integer"
+                        },
+                        "split_percent": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "payout_entity_id",
+                        "split_percent"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "principal",
+                "interest",
+                "fee"
+              ]
+            }
+          },
+          "required": [
+            "payout_split_percentages"
+          ]
+        },
+        "issuer_processor_details": {
+          "type": "object",
+          "properties": {
+            "lithic": {
+              "type": "object",
+              "properties": {
+                "account_token": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "account_token"
+              ]
+            },
+            "galileo": {
+              "type": "object",
+              "properties": {
+                "account_token": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "account_token"
+              ]
+            }
+          },
+          "required": [
+            "lithic",
+            "galileo"
+          ]
+        },
+        "cycle_type": {
+          "type": "object",
+          "properties": {
+            "first_cycle_interval": {
+              "type": "string"
+            },
+            "late_fee_grace": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "first_cycle_interval",
+            "late_fee_grace"
+          ]
+        },
+        "discounts": {
+          "type": "object",
+          "properties": {
+            "prepayment_discount_config": {
+              "type": "object",
+              "properties": {
+                "loan_discount_cents": {
+                  "type": "integer"
+                },
+                "loan_discount_at": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "loan_discount_cents",
+                "loan_discount_at"
+              ]
+            }
+          },
+          "required": [
+            "prepayment_discount_config"
+          ]
+        },
+        "summary": {
+          "type": "object",
+          "properties": {
+            "total_balance_cents": {
+              "type": "integer"
+            },
+            "principal_cents": {
+              "type": "integer"
+            },
+            "interest_balance_cents": {
+              "type": "integer"
+            },
+            "am_interest_balance_cents": {
+              "type": "integer"
+            },
+            "deferred_interest_balance_cents": {
+              "type": "integer"
+            },
+            "am_deferred_interest_balance_cents": {
+              "type": "integer"
+            },
+            "fees_balance_cents": {
+              "type": "integer"
+            },
+            "initial_principal_cents": {
+              "type": "integer"
+            },
+            "total_paid_to_date_cents": {
+              "type": "integer"
+            },
+            "total_interest_paid_to_date_cents": {
+              "type": "integer"
+            },
+            "credit_limit_cents": {
+              "type": "integer"
+            },
+            "max_approved_credit_limit_cents": {
+              "type": "integer"
+            },
+            "interest_rate_percent": {
+              "type": "integer"
+            },
+            "interest_accrual_interval": {
+              "type": "string"
+            },
+            "interest_grace_method": {
+              "type": "string"
+            },
+            "available_credit_cents": {
+              "type": "integer"
+            },
+            "open_to_buy_cents": {
+              "type": "integer"
+            },
+            "total_payoff_cents": {
+              "type": "integer"
+            },
+            "pending_am_interest_balance_cents": {
+              "type": "integer"
+            },
+            "late_fee_cap_percent": {
+              "type": "number"
+            },
+            "payment_reversal_fee_cap_percent": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "total_balance_cents",
+            "principal_cents",
+            "interest_balance_cents",
+            "am_interest_balance_cents",
+            "deferred_interest_balance_cents",
+            "am_deferred_interest_balance_cents",
+            "fees_balance_cents",
+            "initial_principal_cents",
+            "total_paid_to_date_cents",
+            "total_interest_paid_to_date_cents",
+            "credit_limit_cents",
+            "max_approved_credit_limit_cents",
+            "interest_rate_percent",
+            "interest_accrual_interval",
+            "interest_grace_method",
+            "available_credit_cents",
+            "open_to_buy_cents",
+            "total_payoff_cents",
+            "pending_am_interest_balance_cents",
+            "late_fee_cap_percent",
+            "payment_reversal_fee_cap_percent"
+          ]
+        },
+        "associated_entities": {
+          "type": "object",
+          "properties": {
+            "merchant_name": {
+              "type": "string"
+            },
+            "lender_name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "merchant_name",
+            "lender_name"
+          ]
+        },
+        "plaid_config": {
+          "type": "object",
+          "properties": {
+            "plaid_access_token": {
+              "type": "object",
+              "properties": {
+                "valid_config": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "valid_config"
+              ]
+            },
+            "plaid_account_id": {
+              "type": "object",
+              "properties": {
+                "valid_config": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "valid_config"
+              ]
+            },
+            "check_balance_enabled": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "plaid_access_token",
+            "plaid_account_id",
+            "check_balance_enabled"
+          ]
+        },
+        "payout_entities": {
+          "type": "array",
+          "items": [
+            {
+              "type": "object",
+              "properties": {
+                "payout_entity_id": {
+                  "type": "string"
+                },
+                "payout_entity_type": {
+                  "type": "string"
+                },
+                "payout_entity_name": {
+                  "type": "string"
                 },
                 "external_fields": {
                   "type": "array",
@@ -551,838 +1244,145 @@
                     }
                   ]
                 },
-                "min_pay_due_cents": {
+                "parent_payout_entity_id": {
+                  "type": "string"
+                },
+                "bank_account_number": {
+                  "type": "string"
+                },
+                "bank_routing_number": {
+                  "type": "string"
+                },
+                "bank_account_type": {
+                  "type": "string"
+                },
+                "company_identification": {
+                  "type": "string"
+                },
+                "irs_tin": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "payout_entity_id",
+                "payout_entity_type",
+                "payout_entity_name",
+                "external_fields",
+                "parent_payout_entity_id",
+                "bank_account_number",
+                "bank_routing_number",
+                "bank_account_type",
+                "company_identification",
+                "irs_tin"
+              ]
+            }
+          ]
+        },
+        "cards": {
+          "type": "array",
+          "items": [
+            {
+              "type": "object",
+              "properties": {
+                "spend_limit": {
+                  "type": "integer"
+                },
+                "lithic": {
                   "type": "object",
                   "properties": {
-                    "statement_min_pay_cents": {
-                      "type": "integer"
-                    },
-                    "min_pay_cents": {
-                      "type": "integer"
-                    },
-                    "min_pay_due_at": {
+                    "token": {
                       "type": "string"
                     },
-                    "graced_due_date": {
+                    "card_program_token": {
                       "type": "string"
-                    }
-                  },
-                  "required": [
-                    "statement_min_pay_cents",
-                    "min_pay_cents",
-                    "min_pay_due_at",
-                    "graced_due_date"
-                  ]
-                },
-                "additional_min_pay_details": {
-                  "type": "object",
-                  "properties": {
-                    "min_pay_fees_cents": {
-                      "type": "integer"
                     },
-                    "current_min_pay_cents": {
-                      "type": "integer"
+                    "last_four": {
+                      "type": "string"
                     },
-                    "unpaid_min_pay_cents": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "min_pay_fees_cents",
-                    "current_min_pay_cents",
-                    "unpaid_min_pay_cents"
-                  ]
-                },
-                "additional_statement_min_pay_details": {
-                  "type": "object",
-                  "properties": {
-                    "statement_min_pay_charges_principal_cents": {
-                      "type": "integer"
+                    "type": {
+                      "type": "string"
                     },
-                    "statement_min_pay_interest_cents": {
-                      "type": "integer"
+                    "state": {
+                      "type": "string"
                     },
-                    "statement_min_pay_am_interest_cents": {
-                      "type": "integer"
-                    },
-                    "statement_min_pay_deferred_cents": {
-                      "type": "integer"
-                    },
-                    "statement_min_pay_am_deferred_interest_cents": {
-                      "type": "integer"
-                    },
-                    "statement_min_pay_fees_cents": {
-                      "type": "integer"
-                    },
-                    "statement_payments_cents": {
-                      "type": "integer"
-                    },
-                    "previous_statement_min_pay_cents": {
-                      "type": "integer"
-                    },
-                    "statement_current_min_pay_cents": {
-                      "type": "integer"
-                    },
-                    "statement_unpaid_min_pay_cents": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "statement_min_pay_charges_principal_cents",
-                    "statement_min_pay_interest_cents",
-                    "statement_min_pay_am_interest_cents",
-                    "statement_min_pay_deferred_cents",
-                    "statement_min_pay_am_deferred_interest_cents",
-                    "statement_min_pay_fees_cents",
-                    "statement_payments_cents",
-                    "previous_statement_min_pay_cents",
-                    "statement_current_min_pay_cents",
-                    "statement_unpaid_min_pay_cents"
-                  ]
-                },
-                "payment_processor_config": {
-                  "type": "object",
-                  "properties": {
-                    "ach": {
-                      "type": "object",
-                      "properties": {
-                        "payment_processor_name": {
-                          "type": "string"
-                        },
-                        "repay_config": {
-                          "type": "object",
-                          "properties": {
-                            "ach_token": {
-                              "type": "string"
-                            },
-                            "last_four": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "ach_token",
-                            "last_four"
-                          ]
-                        },
-                        "dwolla_config": {
-                          "type": "object",
-                          "properties": {
-                            "ach_token": {
-                              "type": "string"
-                            },
-                            "last_four": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "ach_token",
-                            "last_four"
-                          ]
-                        },
-                        "modern_treasury_config": {
-                          "type": "object",
-                          "properties": {
-                            "ach_token": {
-                              "type": "string"
-                            },
-                            "last_four": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "ach_token",
-                            "last_four"
-                          ]
-                        },
-                        "canopy_nacha_config": {
-                          "type": "object",
-                          "properties": {
-                            "bank_routing_number": {
-                              "type": "string"
-                            },
-                            "bank_account_number": {
-                              "type": "string"
-                            },
-                            "bank_account_type": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "bank_routing_number",
-                            "bank_account_number",
-                            "bank_account_type"
-                          ]
-                        },
-                        "stripe_config": {
-                          "type": "object",
-                          "properties": {
-                            "customer_id": {
-                              "type": "string"
-                            },
-                            "source_id": {
-                              "type": "string"
-                            },
-                            "external_fields": {
-                              "type": "object",
-                              "properties": {
-                                "additionalProp": {
-                                  "type": "object"
-                                }
-                              },
-                              "required": [
-                                "additionalProp"
-                              ]
-                            }
-                          },
-                          "required": [
-                            "customer_id",
-                            "source_id",
-                            "external_fields"
-                          ]
-                        },
-                        "galileo_config": {
-                          "type": "object",
-                          "properties": {
-                            "plaid_processor_token": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "plaid_processor_token"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "payment_processor_name",
-                        "repay_config",
-                        "dwolla_config",
-                        "modern_treasury_config",
-                        "canopy_nacha_config",
-                        "stripe_config",
-                        "galileo_config"
-                      ]
-                    },
-                    "debit_card": {
-                      "type": "object",
-                      "properties": {
-                        "payment_processor_name": {
-                          "type": "string"
-                        },
-                        "repay_config": {
-                          "type": "object",
-                          "properties": {
-                            "card_token": {
-                              "type": "string"
-                            },
-                            "last_four": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "card_token",
-                            "last_four"
-                          ]
-                        },
-                        "authorize_net_config": {
-                          "type": "object",
-                          "properties": {
-                            "customer_profile_id": {
-                              "type": "string"
-                            },
-                            "customer_payment_profile_ids": {
-                              "type": "array",
-                              "items": [
-                                {
-                                  "type": "array",
-                                  "items": [
-                                    {
-                                      "type": "string"
-                                    }
-                                  ]
-                                }
-                              ]
-                            }
-                          },
-                          "required": [
-                            "customer_profile_id",
-                            "customer_payment_profile_ids"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "payment_processor_name",
-                        "repay_config",
-                        "authorize_net_config"
-                      ]
-                    },
-                    "credit_card": {
-                      "type": "object",
-                      "properties": {
-                        "payment_processor_name": {
-                          "type": "string"
-                        },
-                        "checkout_config": {
-                          "type": "object",
-                          "properties": {
-                            "source_id": {
-                              "type": "string"
-                            },
-                            "card_token": {
-                              "type": "string"
-                            },
-                            "last_four": {
-                              "type": "string"
-                            },
-                            "expires_on": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "source_id",
-                            "card_token",
-                            "last_four",
-                            "expires_on"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "payment_processor_name",
-                        "checkout_config"
-                      ]
-                    },
-                    "autopay_enabled": {
-                      "type": "boolean"
-                    },
-                    "autopay_configs": {
-                      "type": "object",
-                      "properties": {
-                        "autopay_method": {
-                          "type": "string"
-                        },
-                        "autopay_fixed_amount_cents": {
-                          "type": "integer"
-                        }
-                      },
-                      "required": [
-                        "autopay_method",
-                        "autopay_fixed_amount_cents"
-                      ]
-                    },
-                    "default_payment_processor_method": {
+                    "memo": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "ach",
-                    "debit_card",
-                    "credit_card",
-                    "autopay_enabled",
-                    "autopay_configs",
-                    "default_payment_processor_method"
-                  ]
-                },
-                "disbursements_config": {
-                  "type": "object",
-                  "properties": {
-                    "disbursement_source_payout_entity_id": {
-                      "type": "integer"
-                    },
-                    "disbursement_split_percentages": {
-                      "type": "object",
-                      "properties": {
-                        "principal": {
-                          "type": "array",
-                          "items": [
-                            {
-                              "type": "object",
-                              "properties": {
-                                "payout_entity_id": {
-                                  "type": "integer"
-                                },
-                                "split_percent": {
-                                  "type": "integer"
-                                }
-                              },
-                              "required": [
-                                "payout_entity_id",
-                                "split_percent"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "principal"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "disbursement_source_payout_entity_id",
-                    "disbursement_split_percentages"
-                  ]
-                },
-                "payouts_config": {
-                  "type": "object",
-                  "properties": {
-                    "payout_split_percentages": {
-                      "type": "object",
-                      "properties": {
-                        "principal": {
-                          "type": "array",
-                          "items": [
-                            {
-                              "type": "object",
-                              "properties": {
-                                "payout_entity_id": {
-                                  "type": "integer"
-                                },
-                                "split_percent": {
-                                  "type": "integer"
-                                }
-                              },
-                              "required": [
-                                "payout_entity_id",
-                                "split_percent"
-                              ]
-                            }
-                          ]
-                        },
-                        "interest": {
-                          "type": "array",
-                          "items": [
-                            {
-                              "type": "object",
-                              "properties": {
-                                "payout_entity_id": {
-                                  "type": "integer"
-                                },
-                                "split_percent": {
-                                  "type": "integer"
-                                }
-                              },
-                              "required": [
-                                "payout_entity_id",
-                                "split_percent"
-                              ]
-                            }
-                          ]
-                        },
-                        "fee": {
-                          "type": "array",
-                          "items": [
-                            {
-                              "type": "object",
-                              "properties": {
-                                "payout_entity_id": {
-                                  "type": "integer"
-                                },
-                                "split_percent": {
-                                  "type": "integer"
-                                }
-                              },
-                              "required": [
-                                "payout_entity_id",
-                                "split_percent"
-                              ]
-                            }
-                          ]
-                        }
-                      },
-                      "required": [
-                        "principal",
-                        "interest",
-                        "fee"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "payout_split_percentages"
-                  ]
-                },
-                "issuer_processor_details": {
-                  "type": "object",
-                  "properties": {
-                    "lithic": {
-                      "type": "object",
-                      "properties": {
-                        "account_token": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "account_token"
-                      ]
-                    },
-                    "galileo": {
-                      "type": "object",
-                      "properties": {
-                        "account_token": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "account_token"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "lithic",
-                    "galileo"
-                  ]
-                },
-                "cycle_type": {
-                  "type": "object",
-                  "properties": {
-                    "first_cycle_interval": {
-                      "type": "string"
-                    },
-                    "late_fee_grace": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "first_cycle_interval",
-                    "late_fee_grace"
-                  ]
-                },
-                "discounts": {
-                  "type": "object",
-                  "properties": {
-                    "prepayment_discount_config": {
-                      "type": "object",
-                      "properties": {
-                        "loan_discount_cents": {
-                          "type": "integer"
-                        },
-                        "loan_discount_at": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "loan_discount_cents",
-                        "loan_discount_at"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "prepayment_discount_config"
-                  ]
-                },
-                "summary": {
-                  "type": "object",
-                  "properties": {
-                    "total_balance_cents": {
-                      "type": "integer"
-                    },
-                    "principal_cents": {
-                      "type": "integer"
-                    },
-                    "interest_balance_cents": {
-                      "type": "integer"
-                    },
-                    "am_interest_balance_cents": {
-                      "type": "integer"
-                    },
-                    "deferred_interest_balance_cents": {
-                      "type": "integer"
-                    },
-                    "am_deferred_interest_balance_cents": {
-                      "type": "integer"
-                    },
-                    "fees_balance_cents": {
-                      "type": "integer"
-                    },
-                    "initial_principal_cents": {
-                      "type": "integer"
-                    },
-                    "total_paid_to_date_cents": {
-                      "type": "integer"
-                    },
-                    "total_interest_paid_to_date_cents": {
-                      "type": "integer"
-                    },
-                    "credit_limit_cents": {
-                      "type": "integer"
-                    },
-                    "max_approved_credit_limit_cents": {
-                      "type": "integer"
-                    },
-                    "interest_rate_percent": {
-                      "type": "integer"
-                    },
-                    "interest_accrual_interval": {
-                      "type": "string"
-                    },
-                    "interest_grace_method": {
-                      "type": "string"
-                    },
-                    "available_credit_cents": {
-                      "type": "integer"
-                    },
-                    "open_to_buy_cents": {
-                      "type": "integer"
-                    },
-                    "total_payoff_cents": {
-                      "type": "integer"
-                    },
-                    "pending_am_interest_balance_cents": {
-                      "type": "integer"
-                    },
-                    "late_fee_cap_percent": {
-                      "type": "number"
-                    },
-                    "payment_reversal_fee_cap_percent": {
-                      "type": "number"
-                    }
-                  },
-                  "required": [
-                    "total_balance_cents",
-                    "principal_cents",
-                    "interest_balance_cents",
-                    "am_interest_balance_cents",
-                    "deferred_interest_balance_cents",
-                    "am_deferred_interest_balance_cents",
-                    "fees_balance_cents",
-                    "initial_principal_cents",
-                    "total_paid_to_date_cents",
-                    "total_interest_paid_to_date_cents",
-                    "credit_limit_cents",
-                    "max_approved_credit_limit_cents",
-                    "interest_rate_percent",
-                    "interest_accrual_interval",
-                    "interest_grace_method",
-                    "available_credit_cents",
-                    "open_to_buy_cents",
-                    "total_payoff_cents",
-                    "pending_am_interest_balance_cents",
-                    "late_fee_cap_percent",
-                    "payment_reversal_fee_cap_percent"
-                  ]
-                },
-                "associated_entities": {
-                  "type": "object",
-                  "properties": {
-                    "merchant_name": {
-                      "type": "string"
-                    },
-                    "lender_name": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "merchant_name",
-                    "lender_name"
-                  ]
-                },
-                "plaid_config": {
-                  "type": "object",
-                  "properties": {
-                    "plaid_access_token": {
-                      "type": "object",
-                      "properties": {
-                        "valid_config": {
-                          "type": "boolean"
-                        }
-                      },
-                      "required": [
-                        "valid_config"
-                      ]
-                    },
-                    "plaid_account_id": {
-                      "type": "object",
-                      "properties": {
-                        "valid_config": {
-                          "type": "boolean"
-                        }
-                      },
-                      "required": [
-                        "valid_config"
-                      ]
-                    },
-                    "check_balance_enabled": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": [
-                    "plaid_access_token",
-                    "plaid_account_id",
-                    "check_balance_enabled"
-                  ]
-                },
-                "payout_entities": {
-                  "type": "array",
-                  "items": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "payout_entity_id": {
-                          "type": "string"
-                        },
-                        "payout_entity_type": {
-                          "type": "string"
-                        },
-                        "payout_entity_name": {
-                          "type": "string"
-                        },
-                        "external_fields": {
-                          "type": "array",
-                          "items": [
-                            {
-                              "type": "object",
-                              "properties": {
-                                "key": {
-                                  "type": "string"
-                                },
-                                "value": {
-                                  "type": "string"
-                                }
-                              },
-                              "required": [
-                                "key",
-                                "value"
-                              ]
-                            }
-                          ]
-                        },
-                        "parent_payout_entity_id": {
-                          "type": "string"
-                        },
-                        "bank_account_number": {
-                          "type": "string"
-                        },
-                        "bank_routing_number": {
-                          "type": "string"
-                        },
-                        "bank_account_type": {
-                          "type": "string"
-                        },
-                        "company_identification": {
-                          "type": "string"
-                        },
-                        "irs_tin": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "payout_entity_id",
-                        "payout_entity_type",
-                        "payout_entity_name",
-                        "external_fields",
-                        "parent_payout_entity_id",
-                        "bank_account_number",
-                        "bank_routing_number",
-                        "bank_account_type",
-                        "company_identification",
-                        "irs_tin"
-                      ]
-                    }
-                  ]
-                },
-                "cards": {
-                  "type": "array",
-                  "items": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "spend_limit": {
-                          "type": "integer"
-                        },
-                        "lithic": {
-                          "type": "object",
-                          "properties": {
-                            "token": {
-                              "type": "string"
-                            },
-                            "card_program_token": {
-                              "type": "string"
-                            },
-                            "last_four": {
-                              "type": "string"
-                            },
-                            "type": {
-                              "type": "string"
-                            },
-                            "state": {
-                              "type": "string"
-                            },
-                            "memo": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "token",
-                            "card_program_token",
-                            "last_four",
-                            "type",
-                            "state",
-                            "memo"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "spend_limit",
-                        "lithic"
-                      ]
-                    }
+                    "token",
+                    "card_program_token",
+                    "last_four",
+                    "type",
+                    "state",
+                    "memo"
                   ]
                 }
               },
               "required": [
-                "account_id",
-                "created_at",
-                "updated_at",
-                "effective_at",
-                "account_overview",
-                "account_product",
-                "external_fields",
-                "min_pay_due_cents",
-                "additional_min_pay_details",
-                "additional_statement_min_pay_details",
-                "payment_processor_config",
-                "disbursements_config",
-                "payouts_config",
-                "issuer_processor_details",
-                "cycle_type",
-                "discounts",
-                "summary",
-                "associated_entities",
-                "plaid_config",
-                "payout_entities",
-                "cards"
+                "spend_limit",
+                "lithic"
               ]
             }
-          },
-          "required": [
-            "address_line_one",
-            "address_line_two",
-            "address_city",
-            "address_state",
-            "address_zip",
-            "address_country_code",
-            "name_prefix",
-            "name_first",
-            "name_middle",
-            "name_last",
-            "name_suffix",
-            "passport",
-            "customer_id",
-            "created_at",
-            "updated_at",
-            "is_borrower_portal_user",
-            "customer_type",
-            "is_active",
-            "verification_status",
-            "title",
-            "phone_number",
-            "ssn",
-            "international_customer_id",
-            "email",
-            "date_of_birth",
-            "customer_balances",
-            "business_details",
-            "metro2_config",
-            "customer_account_role",
-            "customer_account_external_id",
-            "account"
           ]
         }
+      },
+      "required": [
+        "account_id",
+        "created_at",
+        "updated_at",
+        "effective_at",
+        "account_overview",
+        "account_product",
+        "external_fields",
+        "min_pay_due_cents",
+        "additional_min_pay_details",
+        "additional_statement_min_pay_details",
+        "payment_processor_config",
+        "disbursements_config",
+        "payouts_config",
+        "issuer_processor_details",
+        "cycle_type",
+        "discounts",
+        "summary",
+        "associated_entities",
+        "plaid_config",
+        "payout_entities",
+        "cards"
+      ]
+    }
+  },
+  "required": [
+    "address_line_one",
+    "address_line_two",
+    "address_city",
+    "address_state",
+    "address_zip",
+    "address_country_code",
+    "name_prefix",
+    "name_first",
+    "name_middle",
+    "name_last",
+    "name_suffix",
+    "passport",
+    "customer_id",
+    "created_at",
+    "updated_at",
+    "is_borrower_portal_user",
+    "customer_type",
+    "is_active",
+    "verification_status",
+    "title",
+    "phone_number",
+    "ssn",
+    "international_customer_id",
+    "email",
+    "date_of_birth",
+    "customer_balances",
+    "business_details",
+    "metro2_config",
+    "customer_account_role",
+    "customer_account_external_id",
+    "account"
+  ]
+}
