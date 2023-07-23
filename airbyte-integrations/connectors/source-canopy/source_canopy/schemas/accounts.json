@@ -1,12 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "properties": {
-    "results": {
-      "type": "array",
-      "items": [
-        {
-          "type": "object",
           "properties": {
             "address_line_one": {
               "type": "string"
@@ -1392,30 +1386,3 @@
             "account"
           ]
         }
-      ]
-    },
-    "paging": {
-      "type": "object",
-      "properties": {
-        "starting_after": {
-          "type": "string"
-        },
-        "ending_before": {
-          "type": "string"
-        },
-        "has_more": {
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "starting_after",
-        "ending_before",
-        "has_more"
-      ]
-    }
-  },
-  "required": [
-    "results",
-    "paging"
-  ]
-}
