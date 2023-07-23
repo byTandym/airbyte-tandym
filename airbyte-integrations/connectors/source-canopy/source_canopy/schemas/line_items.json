@@ -1,12 +1,90 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "properties": {
-      "results": {
-        "type": ["null", "array"]
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "account_id": {
+      "type": "string"
+    },
+    "line_item_id": {
+      "type": "string"
+    },
+    "effective_at": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    },
+    "valid_at": {
+      "type": "string"
+    },
+    "product_id": {
+      "type": "string"
+    },
+    "line_item_overview": {
+      "type": "object",
+      "properties": {
+        "allocation": {
+          "type": "null"
+        },
+        "description": {
+          "type": "null"
+        },
+        "line_item_type": {
+          "type": "string"
+        },
+        "line_item_status": {
+          "type": "string"
+        }
       },
-      "paging": {
-        "type": ["null", "object"]
-      }
+      "required": [
+        "allocation",
+        "description",
+        "line_item_type",
+        "line_item_status"
+      ]
+    },
+    "line_item_summary": {
+      "type": "object",
+      "properties": {
+        "principal_cents": {
+          "type": "integer"
+        },
+        "original_amount_cents": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "principal_cents",
+        "original_amount_cents"
+      ]
+    },
+    "merchant_data": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "issuer_processor_details": {
+      "type": "null"
+    },
+    "external_fields": {
+      "type": "null"
+    },
+    "line_item_relationships": {
+      "type": "array",
+      "items": {}
     }
   }
+}

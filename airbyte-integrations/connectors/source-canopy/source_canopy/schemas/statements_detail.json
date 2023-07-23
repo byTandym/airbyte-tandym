@@ -1,12 +1,363 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "properties": {
-      "results": {
-        "type": ["null", "array"]
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "account_id": {
+      "type": "string"
+    },
+    "statement_id": {
+      "type": "string"
+    },
+    "effective_as_of_date": {
+      "type": "string"
+    },
+    "account_overview": {
+      "type": "object",
+      "properties": {
+        "promo_purchase_window_inclusive_start": {
+          "type": "string"
+        },
+        "promo_purchase_window_exclusive_end": {
+          "type": "string"
+        },
+        "promo_inclusive_start": {
+          "type": "string"
+        },
+        "promo_exclusive_end": {
+          "type": "string"
+        },
+        "account_status": {
+          "type": "string"
+        },
+        "account_status_subtype": {
+          "type": "string"
+        },
+        "payout_entities": {
+          "type": "array",
+          "items": {}
+        }
       },
-      "paging": {
-        "type": ["null", "object"]
-      }
+      "required": [
+        "promo_purchase_window_inclusive_start",
+        "promo_purchase_window_exclusive_end",
+        "promo_inclusive_start",
+        "promo_exclusive_end",
+        "account_status",
+        "account_status_subtype",
+        "payout_entities"
+      ]
+    },
+    "open_to_buy": {
+      "type": "object",
+      "properties": {
+        "credit_limit_cents": {
+          "type": "integer"
+        },
+        "total_charges_cents": {
+          "type": "integer"
+        },
+        "available_credit_cents": {
+          "type": "integer"
+        },
+        "open_to_buy_cents": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "credit_limit_cents",
+        "total_charges_cents",
+        "available_credit_cents",
+        "open_to_buy_cents"
+      ]
+    },
+    "cycle_summary": {
+      "type": "object",
+      "properties": {
+        "cycle_inclusive_start": {
+          "type": "string"
+        },
+        "cycle_exclusive_end": {
+          "type": "string"
+        },
+        "cycle_length_days": {
+          "type": "integer"
+        },
+        "cycle_charges_cents": {
+          "type": "integer"
+        },
+        "cycle_loans_cents": {
+          "type": "integer"
+        },
+        "cycle_charge_returns_cents": {
+          "type": "integer"
+        },
+        "cycle_refunds_cents": {
+          "type": "integer"
+        },
+        "cycle_payments_cents": {
+          "type": "integer"
+        },
+        "cycle_payment_reversals_cents": {
+          "type": "integer"
+        },
+        "cycle_debit_adjustments_cents": {
+          "type": "integer"
+        },
+        "cycle_credit_adjustments_cents": {
+          "type": "integer"
+        },
+        "cycle_total_credits_cents": {
+          "type": "integer"
+        },
+        "cycle_interest_cents": {
+          "type": "integer"
+        },
+        "cycle_deferred_interest_cents": {
+          "type": "integer"
+        },
+        "cycle_am_deferred_interest_cents": {
+          "type": "integer"
+        },
+        "cycle_am_interest_cents": {
+          "type": "integer"
+        },
+        "cycle_total_interest_cents": {
+          "type": "integer"
+        },
+        "cycle_late_fees_cents": {
+          "type": "integer"
+        },
+        "cycle_fees_total_cents": {
+          "type": "integer"
+        },
+        "cycle_payment_reversals_fees_cents": {
+          "type": "integer"
+        },
+        "cycle_waived_deferred_interest_cents": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "cycle_inclusive_start",
+        "cycle_exclusive_end",
+        "cycle_length_days",
+        "cycle_charges_cents",
+        "cycle_loans_cents",
+        "cycle_charge_returns_cents",
+        "cycle_refunds_cents",
+        "cycle_payments_cents",
+        "cycle_payment_reversals_cents",
+        "cycle_debit_adjustments_cents",
+        "cycle_credit_adjustments_cents",
+        "cycle_total_credits_cents",
+        "cycle_interest_cents",
+        "cycle_deferred_interest_cents",
+        "cycle_am_deferred_interest_cents",
+        "cycle_am_interest_cents",
+        "cycle_total_interest_cents",
+        "cycle_late_fees_cents",
+        "cycle_fees_total_cents",
+        "cycle_payment_reversals_fees_cents",
+        "cycle_waived_deferred_interest_cents"
+      ]
+    },
+    "inception_to_date_summary": {
+      "type": "object",
+      "properties": {
+        "inception_to_date_payments_total_cents": {
+          "type": "integer"
+        },
+        "inception_to_date_purchases_total_cents": {
+          "type": "integer"
+        },
+        "inception_to_date_credits_total_cents": {
+          "type": "integer"
+        },
+        "inception_to_date_credits_and_payments_total_cents": {
+          "type": "integer"
+        },
+        "inception_to_date_interest_total_cents": {
+          "type": "integer"
+        },
+        "inception_to_date_fees_total_cents": {
+          "type": "integer"
+        },
+        "inception_to_date_interest_prior_total": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "inception_to_date_payments_total_cents",
+        "inception_to_date_purchases_total_cents",
+        "inception_to_date_credits_total_cents",
+        "inception_to_date_credits_and_payments_total_cents",
+        "inception_to_date_interest_total_cents",
+        "inception_to_date_fees_total_cents",
+        "inception_to_date_interest_prior_total"
+      ]
+    },
+    "year_to_date_summary": {
+      "type": "object",
+      "properties": {
+        "year_to_date_interest_total_cents": {
+          "type": "integer"
+        },
+        "year_to_date_fees_total_cents": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "year_to_date_interest_total_cents",
+        "year_to_date_fees_total_cents"
+      ]
+    },
+    "min_pay_due": {
+      "type": "object",
+      "properties": {
+        "min_pay_cents": {
+          "type": "integer"
+        },
+        "min_pay_due_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "min_pay_cents",
+        "min_pay_due_at"
+      ]
+    },
+    "additional_min_pay_details": {
+      "type": "object",
+      "properties": {
+        "min_pay_charges_principal_cents": {
+          "type": "integer"
+        },
+        "min_pay_loans_principal_cents": {
+          "type": "integer"
+        },
+        "min_pay_revolving_principal_cents": {
+          "type": "integer"
+        },
+        "min_pay_interest_cents": {
+          "type": "integer"
+        },
+        "min_pay_deferred_cents": {
+          "type": "integer"
+        },
+        "min_pay_am_deferred_interest_cents": {
+          "type": "integer"
+        },
+        "min_pay_am_interest_cents": {
+          "type": "integer"
+        },
+        "min_pay_fees_cents": {
+          "type": "integer"
+        },
+        "min_pay_am_fees_cents": {
+          "type": "integer"
+        },
+        "min_pay_past_due_interest_cents": {
+          "type": "integer"
+        },
+        "min_pay_past_due_deferred_cents": {
+          "type": "integer"
+        },
+        "previous_min_pay_cents": {
+          "type": "integer"
+        },
+        "unpaid_min_pay_cents": {
+          "type": "integer"
+        },
+        "current_min_pay_cents": {
+          "type": "integer"
+        },
+        "min_pay_floor_excess_cents": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "min_pay_charges_principal_cents",
+        "min_pay_loans_principal_cents",
+        "min_pay_revolving_principal_cents",
+        "min_pay_interest_cents",
+        "min_pay_deferred_cents",
+        "min_pay_am_deferred_interest_cents",
+        "min_pay_am_interest_cents",
+        "min_pay_fees_cents",
+        "min_pay_am_fees_cents",
+        "min_pay_past_due_interest_cents",
+        "min_pay_past_due_deferred_cents",
+        "previous_min_pay_cents",
+        "unpaid_min_pay_cents",
+        "current_min_pay_cents",
+        "min_pay_floor_excess_cents"
+      ]
+    },
+    "balance_summary": {
+      "type": "object",
+      "properties": {
+        "charges_principal_cents": {
+          "type": "integer"
+        },
+        "loans_principal_cents": {
+          "type": "integer"
+        },
+        "principal_balance_cents": {
+          "type": "integer"
+        },
+        "interest_balance_cents": {
+          "type": "integer"
+        },
+        "deferred_interest_balance_cents": {
+          "type": "integer"
+        },
+        "am_deferred_interest_balance_cents": {
+          "type": "integer"
+        },
+        "am_interest_balance_cents": {
+          "type": "integer"
+        },
+        "fees_balance_cents": {
+          "type": "integer"
+        },
+        "total_balance_cents": {
+          "type": "integer"
+        },
+        "previous_total_balance_cents": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "charges_principal_cents",
+        "loans_principal_cents",
+        "principal_balance_cents",
+        "interest_balance_cents",
+        "deferred_interest_balance_cents",
+        "am_deferred_interest_balance_cents",
+        "am_interest_balance_cents",
+        "fees_balance_cents",
+        "total_balance_cents",
+        "previous_total_balance_cents"
+      ]
+    },
+    "payoff": {
+      "type": "object",
+      "properties": {
+        "expected_remaining_payment_amount_cents": {
+          "type": "integer"
+        },
+        "total_payoff_cents": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expected_remaining_payment_amount_cents",
+        "total_payoff_cents"
+      ]
+    },
+    "line_items": {
+      "type": "array",
+      "items": {}
     }
   }
+}

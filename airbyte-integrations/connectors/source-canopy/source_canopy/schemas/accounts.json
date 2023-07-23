@@ -670,33 +670,5 @@
         "partner_entity"
       ]
     }
-  },
-  "required": [
-    "customer_id",
-    "customer_account_role",
-    "customer_account_external_id",
-    "name_prefix",
-    "name_first",
-    "name_middle",
-    "name_last",
-    "name_suffix",
-    "phone_number",
-    "ssn",
-    "international_customer_id",
-    "date_of_birth",
-    "email",
-    "address_line_one",
-    "address_line_two",
-    "address_city",
-    "address_state",
-    "address_zip",
-    "address_country_code",
-    "business_legal_name",
-    "doing_business_as",
-    "business_ein",
-    "account_effective_at",
-    "updated_at",
-    "attributes",
-    "account"
-  ]
+  }
 }

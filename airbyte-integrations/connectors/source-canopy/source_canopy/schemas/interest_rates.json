@@ -1,12 +1,27 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "properties": {
-      "results": {
-        "type": ["null", "array"]
-      },
-      "paging": {
-        "type": ["null", "object"]
-      }
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "tags": {
+      "type": "null"
+    },
+    "account_id": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "interest_rate": {
+      "type": "integer"
+    },
+    "interest_rate_id": {
+      "type": "integer"
+    },
+    "effective_at_exclusive_end": {
+      "type": "string"
+    },
+    "effective_at_inclusive_start": {
+      "type": "string"
     }
   }
+}
