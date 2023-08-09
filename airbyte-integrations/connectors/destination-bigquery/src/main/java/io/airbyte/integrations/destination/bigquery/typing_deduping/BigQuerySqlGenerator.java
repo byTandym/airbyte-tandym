@@ -30,10 +30,10 @@ import io.airbyte.integrations.destination.bigquery.BigQuerySQLNameTransformer;
 import io.airbyte.protocol.models.v0.DestinationSyncMode;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
@@ -49,6 +49,15 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
   private final ColumnId CDC_DELETED_AT_COLUMN = buildColumnId("_ab_cdc_deleted_at");
 
   private final Logger LOGGER = LoggerFactory.getLogger(BigQuerySqlGenerator.class);
+  private final String datasetLocation;
+
+  /**
+   * @param datasetLocation This is technically redundant with {@link BigQueryDestinationHandler} setting the query
+   *                        execution location, but let's be explicit since this is typically a compliance requirement.
+   */
+  public BigQuerySqlGenerator(String datasetLocation) {
+    this.datasetLocation = datasetLocation;
+  }
 
   @Override
   public StreamId buildStreamId(final String namespace, final String name, final String rawNamespaceOverride) {
@@ -121,15 +130,15 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
       // Note that struct columns are actually nullable in two ways. For a column `foo`:
       // {foo: null} and {} are both valid, and are both written to the final table as a SQL NULL (_not_ a
       // JSON null).
-      // JSON_QUERY(JSON'{}', '$.foo') returns a SQL null.
-      // JSON_QUERY(JSON'{"foo": null}', '$.foo') returns a JSON null.
+      // JSON_QUERY(JSON'{}', '$."foo"') returns a SQL null.
+      // JSON_QUERY(JSON'{"foo": null}', '$."foo"') returns a JSON null.
       return new StringSubstitutor(Map.of("column_name", column.originalName())).replace(
           """
           CASE
-            WHEN JSON_QUERY(`_airbyte_data`, '$.${column_name}') IS NULL
-              OR JSON_TYPE(JSON_QUERY(`_airbyte_data`, '$.${column_name}')) != 'object'
+            WHEN JSON_QUERY(`_airbyte_data`, '$."${column_name}"') IS NULL
+              OR JSON_TYPE(JSON_QUERY(`_airbyte_data`, '$."${column_name}"')) != 'object'
               THEN NULL
-            ELSE JSON_QUERY(`_airbyte_data`, '$.${column_name}')
+            ELSE JSON_QUERY(`_airbyte_data`, '$."${column_name}"')
           END
           """);
     } else if (airbyteType instanceof Array) {
@@ -137,20 +146,20 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
       return new StringSubstitutor(Map.of("column_name", column.originalName())).replace(
           """
           CASE
-            WHEN JSON_QUERY(`_airbyte_data`, '$.${column_name}') IS NULL
-              OR JSON_TYPE(JSON_QUERY(`_airbyte_data`, '$.${column_name}')) != 'array'
+            WHEN JSON_QUERY(`_airbyte_data`, '$."${column_name}"') IS NULL
+              OR JSON_TYPE(JSON_QUERY(`_airbyte_data`, '$."${column_name}"')) != 'array'
               THEN NULL
-            ELSE JSON_QUERY(`_airbyte_data`, '$.${column_name}')
+            ELSE JSON_QUERY(`_airbyte_data`, '$."${column_name}"')
           END
           """);
     } else if (airbyteType instanceof UnsupportedOneOf || airbyteType == AirbyteProtocolType.UNKNOWN) {
       // JSON_VALUE converts JSON types to native SQL types (int64, string, etc.)
       // We use JSON_QUERY rather than JSON_VALUE so that we can extract a JSON-typed value.
       // This is to avoid needing to convert the raw SQL type back into JSON.
-      return "JSON_QUERY(`_airbyte_data`, '$." + column.originalName() + "')";
+      return "JSON_QUERY(`_airbyte_data`, '$.\"" + column.originalName() + "\"')";
     } else {
       final StandardSQLTypeName dialectType = toDialectType(airbyteType);
-      return "SAFE_CAST(JSON_VALUE(`_airbyte_data`, '$." + column.originalName() + "') as " + dialectType.name() + ")";
+      return "SAFE_CAST(JSON_VALUE(`_airbyte_data`, '$.\"" + column.originalName() + "\"') as " + dialectType.name() + ")";
     }
   }
 
@@ -179,11 +188,13 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
 
     return new StringSubstitutor(Map.of(
         "final_namespace", stream.id().finalNamespace(QUOTE),
-        "final_table_id", stream.id().finalTableId(suffix, QUOTE),
+        "dataset_location", datasetLocation,
+        "final_table_id", stream.id().finalTableId(QUOTE, suffix),
         "column_declarations", columnDeclarations,
         "cluster_config", clusterConfig)).replace(
             """
-            CREATE SCHEMA IF NOT EXISTS ${final_namespace};
+            CREATE SCHEMA IF NOT EXISTS ${final_namespace}
+            OPTIONS(location="${dataset_location}");
 
             CREATE OR REPLACE TABLE ${final_table_id} (
               _airbyte_raw_id STRING NOT NULL,
@@ -192,16 +203,17 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
             ${column_declarations}
             )
             PARTITION BY (DATE_TRUNC(_airbyte_extracted_at, DAY))
-            CLUSTER BY ${cluster_config}
+            CLUSTER BY ${cluster_config};
             """);
   }
 
   private List<String> clusteringColumns(final StreamConfig stream) {
     final List<String> clusterColumns = new ArrayList<>();
     if (stream.destinationSyncMode() == DestinationSyncMode.APPEND_DEDUP) {
-      // We're doing deduping, therefore we have a primary key.
-      // Cluster on all the PK columns
-      stream.primaryKey().forEach(columnId -> {
+      // We're doing de-duping, therefore we have a primary key.
+      // Cluster on the first 3 PK columns since BigQuery only allows up to 4 clustering columns,
+      // and we're always clustering on _airbyte_extracted_at
+      stream.primaryKey().stream().limit(3).forEach(columnId -> {
         clusterColumns.add(columnId.name());
       });
     }
@@ -222,7 +234,7 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
                            final TableDefinition existingTable) throws TableNotMigratedException {
     final var alterTableReport = buildAlterTableReport(stream, existingTable);
     if (!alterTableReport.isDestinationV2Format()) {
-      throw new TableNotMigratedException(String.format("Stream {} has not been migrated to the Destinations V2 format", stream.id().finalName()));
+      throw new TableNotMigratedException(String.format("Stream %s has not been migrated to the Destinations V2 format", stream.id().finalName()));
     }
     boolean tableClusteringMatches = false;
     boolean tablePartitioningMatches = false;
@@ -230,11 +242,10 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
       tableClusteringMatches = clusteringMatches(stream, standardExistingTable);
       tablePartitioningMatches = partitioningMatches(standardExistingTable);
     }
-    LOGGER.info("Alter Table Report {} {} {} {}; Clustering {}; Partitioning {}",
+    LOGGER.info("Alter Table Report {} {} {}; Clustering {}; Partitioning {}",
             alterTableReport.columnsToAdd(),
             alterTableReport.columnsToRemove(),
             alterTableReport.columnsToChangeType(),
-            alterTableReport.isDestinationV2Format(),
             tableClusteringMatches,
             tablePartitioningMatches);
 
@@ -243,17 +254,19 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
 
   @VisibleForTesting
   public boolean clusteringMatches(final StreamConfig stream, final StandardTableDefinition existingTable) {
-    return existingTable.getClustering() == null ? false : containsAllIgnoreCase(
-            existingTable.getClustering().getFields().stream().collect(Collectors.toSet()),
+    return existingTable.getClustering() != null
+        && containsAllIgnoreCase(
+            new HashSet<>(existingTable.getClustering().getFields()),
             clusteringColumns(stream));
   }
 
   @VisibleForTesting
   public boolean partitioningMatches(final StandardTableDefinition existingTable) {
-    return existingTable.getTimePartitioning() == null ? false : existingTable.getTimePartitioning()
+    return existingTable.getTimePartitioning() != null
+        && existingTable.getTimePartitioning()
             .getField()
-            .equalsIgnoreCase("_airbyte_extracted_at") &&
-            TimePartitioning.Type.DAY.equals(existingTable.getTimePartitioning().getType());
+            .equalsIgnoreCase("_airbyte_extracted_at")
+        && TimePartitioning.Type.DAY.equals(existingTable.getTimePartitioning().getType());
   }
 
   public AlterTableReport buildAlterTableReport(final StreamConfig stream, final TableDefinition existingTable) {
@@ -310,12 +323,12 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
   }
 
   @Override
-  public List<String> softReset(final StreamConfig stream) {
+  public String softReset(final StreamConfig stream) {
     final String createTempTable = createTable(stream, SOFT_RESET_SUFFIX);
     final String clearLoadedAt = clearLoadedAt(stream.id());
-    final String rebuildInTempTable = updateTable(SOFT_RESET_SUFFIX, stream);
-    final String overwriteFinalTable = overwriteFinalTableStatement(stream, SOFT_RESET_SUFFIX);
-    return List.of(createTempTable, clearLoadedAt, rebuildInTempTable, overwriteFinalTable);
+    final String rebuildInTempTable = updateTable(stream, SOFT_RESET_SUFFIX, false);
+    final String overwriteFinalTable = overwriteFinalTable(stream.id(), SOFT_RESET_SUFFIX);
+    return String.join("\n", createTempTable, clearLoadedAt, rebuildInTempTable, overwriteFinalTable);
   }
 
   private String clearLoadedAt(final StreamId streamId) {
@@ -326,12 +339,17 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
   }
 
   @Override
-  public String updateTable(final String finalSuffix, final StreamConfig stream) {
+  public String updateTable(final StreamConfig stream, final String finalSuffix) {
+    return updateTable(stream, finalSuffix, true);
+  }
+  private String updateTable(final StreamConfig stream, final String finalSuffix, boolean verifyPrimaryKeys) {
+    String pkVarDeclaration = "";
     String validatePrimaryKeys = "";
-    if (stream.destinationSyncMode() == DestinationSyncMode.APPEND_DEDUP) {
+    if (verifyPrimaryKeys && stream.destinationSyncMode() == DestinationSyncMode.APPEND_DEDUP) {
+      pkVarDeclaration = "DECLARE missing_pk_count INT64;";
       validatePrimaryKeys = validatePrimaryKeys(stream.id(), stream.primaryKey(), stream.columns());
     }
-    final String insertNewRecords = insertNewRecords(stream.id(), finalSuffix, stream.columns());
+    final String insertNewRecords = insertNewRecords(stream, finalSuffix, stream.columns());
     String dedupFinalTable = "";
     String cdcDeletes = "";
     String dedupRawTable = "";
@@ -344,6 +362,7 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
     final String commitRawTable = commitRawTable(stream.id());
 
     return new StringSubstitutor(Map.of(
+        "pk_var_declaration", pkVarDeclaration,
         "validate_primary_keys", validatePrimaryKeys,
         "insert_new_records", insertNewRecords,
         "dedup_final_table", dedupFinalTable,
@@ -351,7 +370,7 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
         "dedupe_raw_table", dedupRawTable,
         "commit_raw_table", commitRawTable)).replace(
             """
-            DECLARE missing_pk_count INT64;
+            ${pk_var_declaration}
 
             BEGIN TRANSACTION;
 
@@ -400,7 +419,7 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
   }
 
   @VisibleForTesting
-  String insertNewRecords(final StreamId id, final String finalSuffix, final LinkedHashMap<ColumnId, AirbyteType> streamColumns) {
+  String insertNewRecords(final StreamConfig stream, final String finalSuffix, final LinkedHashMap<ColumnId, AirbyteType> streamColumns) {
     final String columnCasts = streamColumns.entrySet().stream().map(
         col -> extractAndCast(col.getKey(), col.getValue()) + " as " + col.getKey().name(QUOTE) + ",")
         .collect(joining("\n"));
@@ -411,8 +430,8 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
             "json_extract", extractAndCast(col.getKey(), col.getValue()))).replace(
                 """
                 CASE
-                  WHEN (JSON_QUERY(`_airbyte_data`, '$.${raw_col_name}') IS NOT NULL)
-                    AND (JSON_TYPE(JSON_QUERY(`_airbyte_data`, '$.${raw_col_name}')) != 'null')
+                  WHEN (JSON_QUERY(`_airbyte_data`, '$."${raw_col_name}"') IS NOT NULL)
+                    AND (JSON_TYPE(JSON_QUERY(`_airbyte_data`, '$."${raw_col_name}"')) != 'null')
                     AND (${json_extract} IS NULL)
                     THEN ["Problem with `${raw_col_name}`"]
                   ELSE []
@@ -421,7 +440,7 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
     final String columnList = streamColumns.keySet().stream().map(quotedColumnId -> quotedColumnId.name(QUOTE) + ",").collect(joining("\n"));
 
     String cdcConditionalOrIncludeStatement = "";
-    if (streamColumns.containsKey(CDC_DELETED_AT_COLUMN)){
+    if (stream.destinationSyncMode() == DestinationSyncMode.APPEND_DEDUP && streamColumns.containsKey(CDC_DELETED_AT_COLUMN)){
       cdcConditionalOrIncludeStatement = """
       OR (
         _airbyte_loaded_at IS NOT NULL
@@ -431,8 +450,8 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
     }
 
     return new StringSubstitutor(Map.of(
-        "raw_table_id", id.rawTableId(QUOTE),
-        "final_table_id", id.finalTableId(finalSuffix, QUOTE),
+        "raw_table_id", stream.id().rawTableId(QUOTE),
+        "final_table_id", stream.id().finalTableId(QUOTE, finalSuffix),
         "column_casts", columnCasts,
         "column_errors", columnErrors,
         "cdcConditionalOrIncludeStatement", cdcConditionalOrIncludeStatement,
@@ -474,7 +493,7 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
     final String pkList = primaryKey.stream().map(columnId -> columnId.name(QUOTE)).collect(joining(","));
 
     return new StringSubstitutor(Map.of(
-        "final_table_id", id.finalTableId(finalSuffix, QUOTE),
+        "final_table_id", id.finalTableId(QUOTE, finalSuffix),
         "pk_list", pkList,
         "cursor_name", cursor.name(QUOTE))
         ).replace(
@@ -484,7 +503,7 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
               `_airbyte_raw_id` IN (
                 SELECT `_airbyte_raw_id` FROM (
                   SELECT `_airbyte_raw_id`, row_number() OVER (
-                    PARTITION BY ${pk_list} ORDER BY ${cursor_name} DESC, `_airbyte_extracted_at` DESC
+                    PARTITION BY ${pk_list} ORDER BY ${cursor_name} DESC NULLS LAST, `_airbyte_extracted_at` DESC
                   ) as row_number FROM ${final_table_id}
                 )
                 WHERE row_number != 1
@@ -510,7 +529,7 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
 
     // we want to grab IDs for deletion from the raw table (not the final table itself) to hand out-of-order record insertions after the delete has been registered
     return new StringSubstitutor(Map.of(
-        "final_table_id", stream.id().finalTableId(finalSuffix, QUOTE),
+        "final_table_id", stream.id().finalTableId(QUOTE, finalSuffix),
         "raw_table_id", stream.id().rawTableId(QUOTE),
         "pk_list", pkList,
         "pk_extracts", pkCasts,
@@ -524,8 +543,7 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
                 ${pk_extracts}
               )
             FROM  ${raw_table_id}
-            WHERE
-              JSON_VALUE(`_airbyte_data`, '$._ab_cdc_deleted_at') IS NOT NULL
+            WHERE JSON_TYPE(JSON_QUERY(`_airbyte_data`, '$._ab_cdc_deleted_at')) != 'null'
           )
         ;"""
     );
@@ -535,7 +553,7 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
   String dedupRawTable(final StreamId id, final String finalSuffix) {
     return new StringSubstitutor(Map.of(
         "raw_table_id", id.rawTableId(QUOTE),
-        "final_table_id", id.finalTableId(finalSuffix, QUOTE))).replace(
+        "final_table_id", id.finalTableId(QUOTE, finalSuffix))).replace(
             // Note that this leaves _all_ deletion records in the raw table. We _could_ clear them out, but it
             // would be painful,
             // and it only matters in a few edge cases.
@@ -561,19 +579,11 @@ public class BigQuerySqlGenerator implements SqlGenerator<TableDefinition> {
   }
 
   @Override
-  public Optional<String> overwriteFinalTable(final String finalSuffix, final StreamConfig stream) {
-    if (stream.destinationSyncMode() == DestinationSyncMode.OVERWRITE && finalSuffix.length() > 0) {
-      return Optional.of(overwriteFinalTableStatement(stream, finalSuffix));
-    } else {
-      return Optional.empty();
-    }
-  }
-
-  private String overwriteFinalTableStatement(final StreamConfig stream, final String finalSuffix) {
+  public String overwriteFinalTable(final StreamId streamId, final String finalSuffix) {
     return new StringSubstitutor(Map.of(
-            "final_table_id", stream.id().finalTableId(QUOTE),
-            "tmp_final_table", stream.id().finalTableId(finalSuffix, QUOTE),
-            "real_final_table", stream.id().finalName(QUOTE))).replace(
+            "final_table_id", streamId.finalTableId(QUOTE),
+            "tmp_final_table", streamId.finalTableId(QUOTE, finalSuffix),
+            "real_final_table", streamId.finalName(QUOTE))).replace(
             """
             DROP TABLE IF EXISTS ${final_table_id};
             ALTER TABLE ${tmp_final_table} RENAME TO ${real_final_table};

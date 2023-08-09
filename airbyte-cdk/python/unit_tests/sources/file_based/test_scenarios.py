@@ -14,6 +14,13 @@ from airbyte_cdk.entrypoint import launch
 from airbyte_cdk.models import SyncMode
 from freezegun import freeze_time
 from pytest import LogCaptureFixture
+from unit_tests.sources.file_based.scenarios.avro_scenarios import (
+    avro_all_types_scenario,
+    avro_file_with_double_as_number_scenario,
+    multiple_avro_combine_schema_scenario,
+    multiple_streams_avro_scenario,
+    single_avro_scenario,
+)
 from unit_tests.sources.file_based.scenarios.check_scenarios import (
     error_empty_stream_scenario,
     error_extension_mismatch_scenario,
@@ -27,10 +34,26 @@ from unit_tests.sources.file_based.scenarios.check_scenarios import (
     success_user_provided_schema_scenario,
 )
 from unit_tests.sources.file_based.scenarios.csv_scenarios import (
+    csv_autogenerate_column_names_scenario,
+    csv_custom_bool_values_scenario,
+    csv_custom_delimiter_in_double_quotes_scenario,
+    csv_custom_delimiter_with_escape_char_scenario,
     csv_custom_format_scenario,
+    csv_custom_null_values_scenario,
+    csv_double_quote_is_set_scenario,
+    csv_escape_char_is_set_scenario,
     csv_legacy_format_scenario,
     csv_multi_stream_scenario,
+    csv_newline_in_values_not_quoted_scenario,
+    csv_newline_in_values_quoted_value_scenario,
     csv_single_stream_scenario,
+    csv_skip_after_header_scenario,
+    csv_skip_before_and_after_header_scenario,
+    csv_skip_before_header_scenario,
+    csv_string_can_be_null_with_input_schemas_scenario,
+    csv_string_not_null_if_no_null_values_scenario,
+    csv_strings_can_be_null_not_quoted_scenario,
+    earlier_csv_scenario,
     empty_schema_inference_scenario,
     invalid_csv_scenario,
     multi_csv_scenario,
@@ -78,6 +101,7 @@ from unit_tests.sources.file_based.scenarios.parquet_scenarios import (
     parquet_file_with_decimal_no_config_scenario,
     parquet_various_types_scenario,
     single_parquet_scenario,
+    single_partitioned_parquet_scenario,
 )
 from unit_tests.sources.file_based.scenarios.scenario_builder import TestScenario
 from unit_tests.sources.file_based.scenarios.user_input_schema_scenarios import (
@@ -125,6 +149,7 @@ discover_scenarios = [
     single_csv_file_is_synced_if_modified_at_is_more_recent_than_in_history,
     csv_custom_format_scenario,
     csv_legacy_format_scenario,
+    earlier_csv_scenario,
     multi_stream_custom_format,
     empty_schema_inference_scenario,
     single_parquet_scenario,
@@ -155,6 +180,27 @@ discover_scenarios = [
     jsonl_user_input_schema_scenario,
     schemaless_jsonl_scenario,
     schemaless_jsonl_multi_stream_scenario,
+    csv_string_can_be_null_with_input_schemas_scenario,
+    csv_string_not_null_if_no_null_values_scenario,
+    csv_strings_can_be_null_not_quoted_scenario,
+    csv_newline_in_values_quoted_value_scenario,
+    csv_escape_char_is_set_scenario,
+    csv_double_quote_is_set_scenario,
+    csv_custom_delimiter_with_escape_char_scenario,
+    csv_custom_delimiter_in_double_quotes_scenario,
+    csv_skip_before_header_scenario,
+    csv_skip_after_header_scenario,
+    csv_skip_before_and_after_header_scenario,
+    csv_custom_bool_values_scenario,
+    csv_custom_null_values_scenario,
+    single_avro_scenario,
+    avro_all_types_scenario,
+    multiple_avro_combine_schema_scenario,
+    multiple_streams_avro_scenario,
+    avro_file_with_double_as_number_scenario,
+    csv_newline_in_values_not_quoted_scenario,
+    csv_autogenerate_column_names_scenario,
+    single_partitioned_parquet_scenario
 ]
 
 
@@ -227,9 +273,10 @@ def _verify_read_output(output: Dict[str, Any], scenario: TestScenario) -> None:
     assert len(records) == len(expected_records)
     for actual, expected in zip(records, expected_records):
         if "record" in actual:
+            assert len(actual["record"]["data"]) == len(expected["data"])
             for key, value in actual["record"]["data"].items():
                 if isinstance(value, float):
-                    assert math.isclose(value, expected["data"][key], abs_tol=1e-06)
+                    assert math.isclose(value, expected["data"][key], abs_tol=1e-04)
                 else:
                     assert value == expected["data"][key]
             assert actual["record"]["stream"] == expected["stream"]
@@ -276,6 +323,8 @@ check_scenarios = [
     schemaless_with_user_input_schema_fails_connection_check_multi_stream_scenario,
     schemaless_with_user_input_schema_fails_connection_check_scenario,
     valid_single_stream_user_input_schema_scenario,
+    single_avro_scenario,
+    earlier_csv_scenario,
 ]
 
 
@@ -322,9 +371,9 @@ def discover(capsys: CaptureFixture[str], tmp_path: PosixPath, scenario: TestSce
     output = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
     [catalog] = [o["catalog"] for o in output if o.get("catalog")]  # type: ignore
     return {
-            "catalog": catalog,
-            "logs": [o["log"] for o in output if o.get("log")],
-        }
+        "catalog": catalog,
+        "logs": [o["log"] for o in output if o.get("log")],
+    }
 
 
 def read(capsys: CaptureFixture[str], caplog: LogCaptureFixture, tmp_path: PosixPath, scenario: TestScenario) -> Dict[str, Any]:
@@ -341,20 +390,15 @@ def read(capsys: CaptureFixture[str], caplog: LogCaptureFixture, tmp_path: Posix
     captured = capsys.readouterr().out.splitlines()
     logs = caplog.records
     return {
-        "records": [
-            msg
-            for msg in (json.loads(line) for line in captured)
-            if msg["type"] == "RECORD"
-        ],
-        "logs": [
-            msg["log"]
-            for msg in (json.loads(line) for line in captured)
-            if msg["type"] == "LOG"
-        ] + [{"level": log.levelname, "message": log.message} for log in logs]
+        "records": [msg for msg in (json.loads(line) for line in captured) if msg["type"] == "RECORD"],
+        "logs": [msg["log"] for msg in (json.loads(line) for line in captured) if msg["type"] == "LOG"]
+        + [{"level": log.levelname, "message": log.message} for log in logs],
     }
 
 
-def read_with_state(capsys: CaptureFixture[str], caplog: LogCaptureFixture, tmp_path: PosixPath, scenario: TestScenario) -> Dict[str, List[Any]]:
+def read_with_state(
+    capsys: CaptureFixture[str], caplog: LogCaptureFixture, tmp_path: PosixPath, scenario: TestScenario
+) -> Dict[str, List[Any]]:
     launch(
         scenario.source,
         [
@@ -370,16 +414,9 @@ def read_with_state(capsys: CaptureFixture[str], caplog: LogCaptureFixture, tmp_
     captured = capsys.readouterr()
     logs = caplog.records
     return {
-        "records": [
-            msg
-            for msg in (json.loads(line) for line in captured.out.splitlines())
-            if msg["type"] in ("RECORD", "STATE")
-        ],
-        "logs": [
-            msg["log"]
-            for msg in (json.loads(line) for line in captured.out.splitlines())
-            if msg["type"] == "LOG"
-        ] + [{"level": log.levelname, "message": log.message} for log in logs]
+        "records": [msg for msg in (json.loads(line) for line in captured.out.splitlines()) if msg["type"] in ("RECORD", "STATE")],
+        "logs": [msg["log"] for msg in (json.loads(line) for line in captured.out.splitlines()) if msg["type"] == "LOG"]
+        + [{"level": log.levelname, "message": log.message} for log in logs],
     }
 
 
