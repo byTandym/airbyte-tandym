@@ -1,12 +1,2003 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
+  "$schema": "http://json-schema.org/schema#",
   "properties": {
+    "access_token": {
+      "type": "string"
+    },
+    "billing_address": {
+      "properties": {
+        "address1": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "address2": {
+          "type": "string"
+        },
+        "city": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "country_code": {
+          "type": "string"
+        },
+        "first_name": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        },
+        "phone": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "postal_code": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "region": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "cancelled_at": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "customer": {
+      "properties": {
+        "created_at": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "first_name": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        },
+        "linked_customer_groups": {
+          "type": "array"
+        },
+        "phone": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "fulfillment_status": {
+      "type": "string"
+    },
+    "fulfillments": {
+      "items": {
+        "properties": {
+          "carrier": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "line_items": {
+            "items": {
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "price": {
+                  "type": "number"
+                },
+                "product_id": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "quantity": {
+                  "type": "number"
+                },
+                "sku": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "variant_id": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "service": {
+            "type": "string"
+          },
+          "tracking_number": {
+            "type": "string"
+          },
+          "tracking_url": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
     "id": {
-      "type": ["null", "string"]
+      "type": "string"
+    },
+    "iso_currency_code": {
+      "type": "string"
+    },
+    "line_items": {
+      "items": {
+        "properties": {
+          "barcode": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "fulfillment_service": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "inventory": {
+            "properties": {
+              "locations": {
+                "type": "array"
+              },
+              "total_count": {
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "inventory_management": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "iso_currency_code": {
+            "type": "string"
+          },
+          "platform_id": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "product_id": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "requires_shipping": {
+            "type": "boolean"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "total_discount": {
+            "type": "number"
+          },
+          "unit_cost": {
+            "type": "number"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "variant_id": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "name": {
+      "type": "string"
+    },
+    "order_number": {
+      "type": "string"
+    },
+    "payment_status": {
+      "type": "string"
+    },
+    "platform_id": {
+      "type": "string"
+    },
+    "refunds": {
+      "items": {
+        "properties": {
+          "line_item_id": {
+            "type": "string"
+          },
+          "line_items": {
+            "items": {
+              "properties": {
+                "amount": {
+                  "type": "string"
+                },
+                "line_item_id": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "variant_id": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "shipping_address": {
+      "properties": {
+        "address1": {
+          "type": "string"
+        },
+        "address2": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "country_code": {
+          "type": "string"
+        },
+        "first_name": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "postal_code": {
+          "type": "string"
+        },
+        "region": {
+          "type": "string"
+        }
+      },
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "shipping_method": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "source_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "tags": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "total_discount": {
+      "type": "number"
+    },
+    "total_line_items_price": {
+      "type": "number"
+    },
+    "total_price": {
+      "type": "number"
+    },
+    "total_shipping": {
+      "type": "number"
+    },
+    "total_shipping_discount": {
+      "type": "number"
+    },
+    "total_tax": {
+      "type": "number"
+    },
+    "transactions": {
+      "items": {
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "gateway": {
+            "type": "string"
+          },
+          "gateway_data": {
+            "properties": {
+              "Ack": {
+                "type": "string"
+              },
+              "AuthorizationID": {
+                "type": "string"
+              },
+              "AuthorizeResult": {
+                "properties": {
+                  "AuthorizationDetails": {
+                    "properties": {
+                      "AmazonAuthorizationId": {
+                        "type": "string"
+                      },
+                      "AuthorizationAmount": {
+                        "properties": {
+                          "Amount": {
+                            "type": "string"
+                          },
+                          "CurrencyCode": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "AuthorizationFee": {
+                        "properties": {
+                          "Amount": {
+                            "type": "string"
+                          },
+                          "CurrencyCode": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "AuthorizationReferenceId": {
+                        "type": "string"
+                      },
+                      "AuthorizationStatus": {
+                        "properties": {
+                          "LastUpdateTimestamp": {
+                            "type": "string"
+                          },
+                          "State": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "CaptureNow": {
+                        "type": "string"
+                      },
+                      "CapturedAmount": {
+                        "properties": {
+                          "Amount": {
+                            "type": "string"
+                          },
+                          "CurrencyCode": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "CreationTimestamp": {
+                        "type": "string"
+                      },
+                      "ExpirationTimestamp": {
+                        "type": "string"
+                      },
+                      "SoftDecline": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              },
+              "Build": {
+                "type": "string"
+              },
+              "CaptureResult": {
+                "properties": {
+                  "CaptureDetails": {
+                    "properties": {
+                      "AmazonCaptureId": {
+                        "type": "string"
+                      },
+                      "CaptureAmount": {
+                        "properties": {
+                          "Amount": {
+                            "type": "string"
+                          },
+                          "CurrencyCode": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "CaptureFee": {
+                        "properties": {
+                          "Amount": {
+                            "type": "string"
+                          },
+                          "CurrencyCode": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "CaptureReferenceId": {
+                        "type": "string"
+                      },
+                      "CaptureStatus": {
+                        "properties": {
+                          "LastUpdateTimestamp": {
+                            "type": "string"
+                          },
+                          "State": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "CreationTimestamp": {
+                        "type": "string"
+                      },
+                      "RefundedAmount": {
+                        "properties": {
+                          "Amount": {
+                            "type": "string"
+                          },
+                          "CurrencyCode": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "SoftDescriptor": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              },
+              "CorrelationID": {
+                "type": "string"
+              },
+              "FeeRefundAmount": {
+                "type": "string"
+              },
+              "GrossRefundAmount": {
+                "type": "string"
+              },
+              "NetRefundAmount": {
+                "type": "string"
+              },
+              "PaymentInfo": {
+                "properties": {
+                  "FeeAmount": {
+                    "type": "string"
+                  },
+                  "GrossAmount": {
+                    "type": "string"
+                  },
+                  "ParentTransactionID": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "PaymentDate": {
+                    "type": "string"
+                  },
+                  "PaymentStatus": {
+                    "type": "string"
+                  },
+                  "PaymentType": {
+                    "type": "string"
+                  },
+                  "PendingReason": {
+                    "type": "string"
+                  },
+                  "ProtectionEligibility": {
+                    "type": "string"
+                  },
+                  "ProtectionEligibilityType": {
+                    "type": "string"
+                  },
+                  "ReasonCode": {
+                    "type": "string"
+                  },
+                  "SellerDetails": {
+                    "properties": {
+                      "SecureMerchantAccountID": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "ShippingMethod": {
+                    "type": "string"
+                  },
+                  "TaxAmount": {
+                    "type": "string"
+                  },
+                  "TransactionID": {
+                    "type": "string"
+                  },
+                  "TransactionType": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "RefundInfo": {
+                "properties": {
+                  "PendingReason": {
+                    "type": "string"
+                  },
+                  "RefundStatus": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "RefundTransactionID": {
+                "type": "string"
+              },
+              "ResponseMetadata": {
+                "properties": {
+                  "RequestId": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "SuccessPageRedirectRequested": {
+                "type": "string"
+              },
+              "Timestamp": {
+                "type": "string"
+              },
+              "Token": {
+                "type": "string"
+              },
+              "TotalRefundedAmount": {
+                "type": "string"
+              },
+              "Version": {
+                "type": "string"
+              },
+              "ack": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "number"
+              },
+              "amount_capturable": {
+                "type": "number"
+              },
+              "amount_received": {
+                "type": "number"
+              },
+              "authorization_expiration": {
+                "type": "string"
+              },
+              "authorization_id": {
+                "type": "string"
+              },
+              "balance_transaction": {
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "object": {
+                    "type": "string"
+                  }
+                },
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "bin": {
+                "type": "string"
+              },
+              "build": {
+                "type": "string"
+              },
+              "capture_id": {
+                "type": "string"
+              },
+              "capture_method": {
+                "type": "string"
+              },
+              "charge": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "properties": {
+                      "amount": {
+                        "type": "number"
+                      },
+                      "application_fee": {
+                        "type": "string"
+                      },
+                      "balance_transaction": {
+                        "type": "string"
+                      },
+                      "captured": {
+                        "type": "boolean"
+                      },
+                      "created": {
+                        "type": "number"
+                      },
+                      "currency": {
+                        "type": "string"
+                      },
+                      "failure_code": {
+                        "type": "null"
+                      },
+                      "failure_message": {
+                        "type": "null"
+                      },
+                      "fraud_details": {
+                        "type": "object"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "livemode": {
+                        "type": "boolean"
+                      },
+                      "metadata": {
+                        "properties": {
+                          "email": {
+                            "type": "string"
+                          },
+                          "manual_entry": {
+                            "type": "string"
+                          },
+                          "order_id": {
+                            "type": "string"
+                          },
+                          "order_transaction_id": {
+                            "type": "string"
+                          },
+                          "payments_charge_id": {
+                            "type": "string"
+                          },
+                          "shop_id": {
+                            "type": "string"
+                          },
+                          "shop_name": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "mit_params": {
+                        "properties": {
+                          "network_transaction_id": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "object": {
+                        "type": "string"
+                      },
+                      "outcome": {
+                        "properties": {
+                          "network_status": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": "null"
+                          },
+                          "risk_level": {
+                            "type": "string"
+                          },
+                          "seller_message": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "paid": {
+                        "type": "boolean"
+                      },
+                      "payment_intent": {
+                        "type": "string"
+                      },
+                      "payment_method": {
+                        "type": "string"
+                      },
+                      "payment_method_details": {
+                        "properties": {
+                          "card": {
+                            "properties": {
+                              "amount_authorized": {
+                                "type": "number"
+                              },
+                              "brand": {
+                                "type": "string"
+                              },
+                              "capture_before": {
+                                "type": "number"
+                              },
+                              "checks": {
+                                "properties": {
+                                  "address_line1_check": {
+                                    "type": "string"
+                                  },
+                                  "address_postal_code_check": {
+                                    "type": "string"
+                                  },
+                                  "cvc_check": {
+                                    "type": [
+                                      "null",
+                                      "string"
+                                    ]
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "country": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              },
+                              "ds_transaction_id": {
+                                "type": "null"
+                              },
+                              "exp_month": {
+                                "type": "number"
+                              },
+                              "exp_year": {
+                                "type": "number"
+                              },
+                              "fingerprint": {
+                                "type": "string"
+                              },
+                              "funding": {
+                                "type": "string"
+                              },
+                              "iin": {
+                                "type": "string"
+                              },
+                              "installments": {
+                                "type": "null"
+                              },
+                              "issuer": {
+                                "type": "string"
+                              },
+                              "last4": {
+                                "type": "string"
+                              },
+                              "mandate": {
+                                "type": "null"
+                              },
+                              "moto": {
+                                "type": "null"
+                              },
+                              "network": {
+                                "type": "string"
+                              },
+                              "network_token": {
+                                "properties": {
+                                  "used": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "network_transaction_id": {
+                                "type": "string"
+                              },
+                              "overcapture_supported": {
+                                "type": "boolean"
+                              },
+                              "payment_account_reference": {
+                                "type": [
+                                  "null",
+                                  "string"
+                                ]
+                              },
+                              "three_d_secure": {
+                                "type": "null"
+                              },
+                              "wallet": {
+                                "type": "null"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "refunded": {
+                        "type": "boolean"
+                      },
+                      "source": {
+                        "type": "null"
+                      },
+                      "status": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  }
+                ]
+              },
+              "charges": {
+                "properties": {
+                  "data": {
+                    "items": {
+                      "properties": {
+                        "amount": {
+                          "type": "number"
+                        },
+                        "application_fee": {
+                          "type": [
+                            "null",
+                            "string"
+                          ]
+                        },
+                        "balance_transaction": {
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "object": {
+                              "type": "string"
+                            }
+                          },
+                          "type": [
+                            "object",
+                            "null"
+                          ]
+                        },
+                        "captured": {
+                          "type": "boolean"
+                        },
+                        "created": {
+                          "type": "number"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "fraud_details": {
+                          "type": "object"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "livemode": {
+                          "type": "boolean"
+                        },
+                        "metadata": {
+                          "properties": {
+                            "email": {
+                              "type": "string"
+                            },
+                            "manual_entry": {
+                              "type": "string"
+                            },
+                            "order_id": {
+                              "type": "string"
+                            },
+                            "order_transaction_id": {
+                              "type": "string"
+                            },
+                            "payments_charge_id": {
+                              "type": "string"
+                            },
+                            "shop_id": {
+                              "type": "string"
+                            },
+                            "shop_name": {
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "mit_params": {
+                          "properties": {
+                            "network_transaction_id": {
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "object": {
+                          "type": "string"
+                        },
+                        "outcome": {
+                          "properties": {
+                            "network_status": {
+                              "type": "string"
+                            },
+                            "risk_level": {
+                              "type": "string"
+                            },
+                            "seller_message": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "paid": {
+                          "type": "boolean"
+                        },
+                        "payment_intent": {
+                          "type": "string"
+                        },
+                        "payment_method": {
+                          "type": "string"
+                        },
+                        "payment_method_details": {
+                          "properties": {
+                            "card": {
+                              "properties": {
+                                "amount_authorized": {
+                                  "type": [
+                                    "null",
+                                    "number"
+                                  ]
+                                },
+                                "brand": {
+                                  "type": "string"
+                                },
+                                "capture_before": {
+                                  "type": "number"
+                                },
+                                "checks": {
+                                  "properties": {
+                                    "address_line1_check": {
+                                      "type": [
+                                        "null",
+                                        "string"
+                                      ]
+                                    },
+                                    "address_postal_code_check": {
+                                      "type": [
+                                        "null",
+                                        "string"
+                                      ]
+                                    },
+                                    "cvc_check": {
+                                      "type": [
+                                        "null",
+                                        "string"
+                                      ]
+                                    }
+                                  },
+                                  "type": "object"
+                                },
+                                "country": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "exp_month": {
+                                  "type": "number"
+                                },
+                                "exp_year": {
+                                  "type": "number"
+                                },
+                                "fingerprint": {
+                                  "type": "string"
+                                },
+                                "funding": {
+                                  "type": "string"
+                                },
+                                "iin": {
+                                  "type": "string"
+                                },
+                                "issuer": {
+                                  "type": "string"
+                                },
+                                "last4": {
+                                  "type": "string"
+                                },
+                                "network": {
+                                  "type": "string"
+                                },
+                                "network_token": {
+                                  "properties": {
+                                    "used": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "type": "object"
+                                },
+                                "network_transaction_id": {
+                                  "type": "string"
+                                },
+                                "overcapture_supported": {
+                                  "type": "boolean"
+                                },
+                                "payment_account_reference": {
+                                  "type": [
+                                    "null",
+                                    "string"
+                                  ]
+                                },
+                                "three_d_secure": {
+                                  "properties": {
+                                    "authenticated": {
+                                      "type": "boolean"
+                                    },
+                                    "authentication_flow": {
+                                      "type": "string"
+                                    },
+                                    "result": {
+                                      "type": "string"
+                                    },
+                                    "succeeded": {
+                                      "type": "boolean"
+                                    },
+                                    "version": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "type": [
+                                    "object",
+                                    "null"
+                                  ]
+                                },
+                                "wallet": {
+                                  "properties": {
+                                    "apple_pay": {
+                                      "properties": {
+                                        "type": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "type": "object"
+                                    },
+                                    "dynamic_last4": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "type": [
+                                    "object",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "type": {
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "refunded": {
+                          "type": "boolean"
+                        },
+                        "status": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "has_more": {
+                    "type": "boolean"
+                  },
+                  "object": {
+                    "type": "string"
+                  },
+                  "total_count": {
+                    "type": "number"
+                  },
+                  "url": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "confirmation_method": {
+                "type": "string"
+              },
+              "correlation_id": {
+                "type": "string"
+              },
+              "created": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "currency": {
+                "type": "string"
+              },
+              "error": {
+                "properties": {
+                  "charge": {
+                    "type": "string"
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "decline_code": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "param": {
+                    "type": "string"
+                  },
+                  "payment_intent": {
+                    "properties": {
+                      "amount": {
+                        "type": "number"
+                      },
+                      "amount_capturable": {
+                        "type": "number"
+                      },
+                      "amount_received": {
+                        "type": "number"
+                      },
+                      "capture_method": {
+                        "type": "string"
+                      },
+                      "charges": {
+                        "properties": {
+                          "data": {
+                            "items": {
+                              "properties": {
+                                "amount": {
+                                  "type": "number"
+                                },
+                                "captured": {
+                                  "type": "boolean"
+                                },
+                                "created": {
+                                  "type": "number"
+                                },
+                                "currency": {
+                                  "type": "string"
+                                },
+                                "failure_code": {
+                                  "type": "string"
+                                },
+                                "failure_message": {
+                                  "type": "string"
+                                },
+                                "fraud_details": {
+                                  "type": "object"
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "livemode": {
+                                  "type": "boolean"
+                                },
+                                "metadata": {
+                                  "properties": {
+                                    "email": {
+                                      "type": "string"
+                                    },
+                                    "manual_entry": {
+                                      "type": "string"
+                                    },
+                                    "order_id": {
+                                      "type": "string"
+                                    },
+                                    "order_transaction_id": {
+                                      "type": "string"
+                                    },
+                                    "payments_charge_id": {
+                                      "type": "string"
+                                    },
+                                    "shop_id": {
+                                      "type": "string"
+                                    },
+                                    "shop_name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "type": "object"
+                                },
+                                "mit_params": {
+                                  "properties": {
+                                    "network_transaction_id": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "type": "object"
+                                },
+                                "object": {
+                                  "type": "string"
+                                },
+                                "outcome": {
+                                  "properties": {
+                                    "network_status": {
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string"
+                                    },
+                                    "risk_level": {
+                                      "type": "string"
+                                    },
+                                    "rule": {
+                                      "type": "string"
+                                    },
+                                    "seller_message": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "type": "object"
+                                },
+                                "paid": {
+                                  "type": "boolean"
+                                },
+                                "payment_intent": {
+                                  "type": "string"
+                                },
+                                "payment_method": {
+                                  "type": "string"
+                                },
+                                "payment_method_details": {
+                                  "properties": {
+                                    "card": {
+                                      "properties": {
+                                        "amount_authorized": {
+                                          "type": [
+                                            "null",
+                                            "number"
+                                          ]
+                                        },
+                                        "brand": {
+                                          "type": "string"
+                                        },
+                                        "capture_before": {
+                                          "type": "number"
+                                        },
+                                        "checks": {
+                                          "properties": {
+                                            "address_line1_check": {
+                                              "type": "string"
+                                            },
+                                            "address_postal_code_check": {
+                                              "type": "string"
+                                            },
+                                            "cvc_check": {
+                                              "type": [
+                                                "null",
+                                                "string"
+                                              ]
+                                            }
+                                          },
+                                          "type": "object"
+                                        },
+                                        "country": {
+                                          "type": "string"
+                                        },
+                                        "description": {
+                                          "type": "string"
+                                        },
+                                        "exp_month": {
+                                          "type": "number"
+                                        },
+                                        "exp_year": {
+                                          "type": "number"
+                                        },
+                                        "fingerprint": {
+                                          "type": "string"
+                                        },
+                                        "funding": {
+                                          "type": "string"
+                                        },
+                                        "iin": {
+                                          "type": "string"
+                                        },
+                                        "issuer": {
+                                          "type": "string"
+                                        },
+                                        "last4": {
+                                          "type": "string"
+                                        },
+                                        "network": {
+                                          "type": "string"
+                                        },
+                                        "network_token": {
+                                          "properties": {
+                                            "used": {
+                                              "type": "boolean"
+                                            }
+                                          },
+                                          "type": "object"
+                                        },
+                                        "network_transaction_id": {
+                                          "type": "string"
+                                        },
+                                        "overcapture_supported": {
+                                          "type": "boolean"
+                                        },
+                                        "payment_account_reference": {
+                                          "type": [
+                                            "null",
+                                            "string"
+                                          ]
+                                        },
+                                        "three_d_secure": {
+                                          "properties": {
+                                            "authenticated": {
+                                              "type": "boolean"
+                                            },
+                                            "authentication_flow": {
+                                              "type": "string"
+                                            },
+                                            "result": {
+                                              "type": "string"
+                                            },
+                                            "succeeded": {
+                                              "type": "boolean"
+                                            },
+                                            "version": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "type": [
+                                            "object",
+                                            "null"
+                                          ]
+                                        }
+                                      },
+                                      "type": "object"
+                                    },
+                                    "type": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "type": "object"
+                                },
+                                "refunded": {
+                                  "type": "boolean"
+                                },
+                                "status": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "has_more": {
+                            "type": "boolean"
+                          },
+                          "object": {
+                            "type": "string"
+                          },
+                          "total_count": {
+                            "type": "number"
+                          },
+                          "url": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "confirmation_method": {
+                        "type": "string"
+                      },
+                      "created": {
+                        "type": "number"
+                      },
+                      "currency": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "last_payment_error": {
+                        "properties": {
+                          "charge": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "decline_code": {
+                            "type": "string"
+                          },
+                          "doc_url": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "param": {
+                            "type": "string"
+                          },
+                          "payment_method": {
+                            "properties": {
+                              "card": {
+                                "properties": {
+                                  "brand": {
+                                    "type": "string"
+                                  },
+                                  "checks": {
+                                    "properties": {
+                                      "address_line1_check": {
+                                        "type": "string"
+                                      },
+                                      "address_postal_code_check": {
+                                        "type": "string"
+                                      },
+                                      "cvc_check": {
+                                        "type": [
+                                          "null",
+                                          "string"
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  "country": {
+                                    "type": "string"
+                                  },
+                                  "description": {
+                                    "type": "string"
+                                  },
+                                  "exp_month": {
+                                    "type": "number"
+                                  },
+                                  "exp_year": {
+                                    "type": "number"
+                                  },
+                                  "fingerprint": {
+                                    "type": "string"
+                                  },
+                                  "funding": {
+                                    "type": "string"
+                                  },
+                                  "iin": {
+                                    "type": "string"
+                                  },
+                                  "issuer": {
+                                    "type": "string"
+                                  },
+                                  "last4": {
+                                    "type": "string"
+                                  },
+                                  "networks": {
+                                    "properties": {
+                                      "available": {
+                                        "items": {
+                                          "type": "string"
+                                        },
+                                        "type": "array"
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  "three_d_secure_usage": {
+                                    "properties": {
+                                      "supported": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "type": "object"
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              "created": {
+                                "type": "number"
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "livemode": {
+                                "type": "boolean"
+                              },
+                              "metadata": {
+                                "type": "object"
+                              },
+                              "object": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "livemode": {
+                        "type": "boolean"
+                      },
+                      "metadata": {
+                        "properties": {
+                          "email": {
+                            "type": "string"
+                          },
+                          "manual_entry": {
+                            "type": "string"
+                          },
+                          "order_id": {
+                            "type": "string"
+                          },
+                          "order_transaction_id": {
+                            "type": "string"
+                          },
+                          "payments_charge_id": {
+                            "type": "string"
+                          },
+                          "shop_id": {
+                            "type": "string"
+                          },
+                          "shop_name": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "object": {
+                        "type": "string"
+                      },
+                      "payment_method_types": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "status": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "error_code": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "fee": {
+                "type": "number"
+              },
+              "fee_amount": {
+                "type": "string"
+              },
+              "fee_amount_currency_id": {
+                "type": "string"
+              },
+              "fee_refund_amount": {
+                "type": "string"
+              },
+              "fee_refund_amount_currency_id": {
+                "type": "string"
+              },
+              "gross_amount": {
+                "type": "string"
+              },
+              "gross_amount_currency_id": {
+                "type": "string"
+              },
+              "gross_refund_amount": {
+                "type": "string"
+              },
+              "gross_refund_amount_currency_id": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "last_payment_error": {
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "doc_url": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "payment_method": {
+                    "properties": {
+                      "card": {
+                        "properties": {
+                          "brand": {
+                            "type": "string"
+                          },
+                          "checks": {
+                            "properties": {
+                              "address_line1_check": {
+                                "type": "string"
+                              },
+                              "address_postal_code_check": {
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "country": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "exp_month": {
+                            "type": "number"
+                          },
+                          "exp_year": {
+                            "type": "number"
+                          },
+                          "fingerprint": {
+                            "type": "string"
+                          },
+                          "funding": {
+                            "type": "string"
+                          },
+                          "iin": {
+                            "type": "string"
+                          },
+                          "issuer": {
+                            "type": "string"
+                          },
+                          "last4": {
+                            "type": "string"
+                          },
+                          "networks": {
+                            "properties": {
+                              "available": {
+                                "items": {
+                                  "type": "string"
+                                },
+                                "type": "array"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "three_d_secure_usage": {
+                            "properties": {
+                              "supported": {
+                                "type": "boolean"
+                              }
+                            },
+                            "type": "object"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "created": {
+                        "type": "number"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "livemode": {
+                        "type": "boolean"
+                      },
+                      "metadata": {
+                        "type": "object"
+                      },
+                      "object": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "livemode": {
+                "type": "boolean"
+              },
+              "metadata": {
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "manual_entry": {
+                    "type": "string"
+                  },
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "order_transaction_id": {
+                    "type": "string"
+                  },
+                  "payments_charge_id": {
+                    "type": "string"
+                  },
+                  "payments_refund_id": {
+                    "type": "string"
+                  },
+                  "shop_id": {
+                    "type": "string"
+                  },
+                  "shop_name": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "mit_params": {
+                "type": "object"
+              },
+              "net_refund_amount": {
+                "type": "string"
+              },
+              "net_refund_amount_currency_id": {
+                "type": "string"
+              },
+              "object": {
+                "type": "string"
+              },
+              "parent_transaction_id": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "payment_date": {
+                "type": "string"
+              },
+              "payment_id": {
+                "type": "string"
+              },
+              "payment_method": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "payment_method_details": {
+                "properties": {
+                  "card": {
+                    "properties": {
+                      "acquirer_reference_number_status": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "payment_method_types": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "payment_status": {
+                "type": "string"
+              },
+              "payment_type": {
+                "type": "string"
+              },
+              "pending_reason": {
+                "type": "string"
+              },
+              "protection_eligibility": {
+                "type": "string"
+              },
+              "protection_eligibility_type": {
+                "type": "string"
+              },
+              "reason_code": {
+                "type": "string"
+              },
+              "reference_id": {
+                "type": "string"
+              },
+              "refund_id": {
+                "type": "string"
+              },
+              "refund_status": {
+                "type": "string"
+              },
+              "refund_transaction_id": {
+                "type": "string"
+              },
+              "secure_merchant_account_id": {
+                "type": "string"
+              },
+              "seller_id": {
+                "type": "number"
+              },
+              "shipping_method": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "success_page_redirect_requested": {
+                "type": "string"
+              },
+              "tax_amount": {
+                "type": "string"
+              },
+              "tax_amount_currency_id": {
+                "type": "string"
+              },
+              "timestamp": {
+                "type": "string"
+              },
+              "token": {
+                "type": "string"
+              },
+              "total_refunded_amount": {
+                "type": "string"
+              },
+              "total_refunded_amount_currency_id": {
+                "type": "string"
+              },
+              "transaction_id": {
+                "type": "string"
+              },
+              "transaction_type": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "x_account_id": {
+                "type": "string"
+              },
+              "x_amount": {
+                "type": "string"
+              },
+              "x_currency": {
+                "type": "string"
+              },
+              "x_gateway_reference": {
+                "type": "string"
+              },
+              "x_message": {
+                "type": "string"
+              },
+              "x_reference": {
+                "type": "string"
+              },
+              "x_result": {
+                "type": "string"
+              },
+              "x_signature": {
+                "type": "string"
+              },
+              "x_test": {
+                "type": "string"
+              },
+              "x_timestamp": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "id": {
+            "type": "string"
+          },
+          "iso_currency_code": {
+            "type": "string"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "payment_method_type": {
+            "type": "string"
+          },
+          "platform_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
     },
     "updated_at": {
-      "type": ["null", "string"]
+      "type": "string"
     }
-  }
+  },
+  "type": "object"
 }

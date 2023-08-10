@@ -1,19 +1,194 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
+  "$schema": "http://json-schema.org/schema#",
   "properties": {
+    "access_token": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
     "id": {
-      "type": ["null", "string"]
+      "type": "string"
+    },
+    "images": {
+      "items": {
+        "properties": {
+          "src": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
     },
     "name": {
-      "type": ["null", "string"]
+      "type": "string"
     },
-    "years_of_service": {
-      "type": ["null", "integer"]
+    "platform_id": {
+      "type": "string"
     },
-    "start_date": {
-      "type": ["null", "string"],
-      "format": "date-time"
+    "product_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "tags": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "type": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    },
+    "variants": {
+      "items": {
+        "properties": {
+          "barcode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "currency_prices": {
+            "type": "array"
+          },
+          "fulfillment_service": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "images": {
+            "items": {
+              "properties": {
+                "src": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "inventory": {
+            "properties": {
+              "locations": {
+                "items": {
+                  "properties": {
+                    "address1": {
+                      "type": "string"
+                    },
+                    "address2": {
+                      "type": "string"
+                    },
+                    "city": {
+                      "type": "string"
+                    },
+                    "country": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "platform_id": {
+                      "type": "string"
+                    },
+                    "postal_code": {
+                      "type": "string"
+                    },
+                    "quantity": {
+                      "type": "number"
+                    },
+                    "region": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "total_count": {
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "inventory_management": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "iso_currency_code": {
+            "type": "string"
+          },
+          "option_values": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "platform_id": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "product_id": {
+            "type": "string"
+          },
+          "requires_shipping": {
+            "type": "boolean"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "weight": {
+            "properties": {
+              "unit": {
+                "type": "string"
+              },
+              "value": {
+                "type": "number"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
     }
-  }
+  },
+  "type": "object"
 }

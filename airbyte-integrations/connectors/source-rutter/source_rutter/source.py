@@ -19,7 +19,7 @@ from airbyte_cdk.models import SyncMode
 
 
 class RutterStream(HttpStream, ABC):
-    url_base = "https://production.rutterapi.com/"
+    url_base = "https://production.rutterapi.com"
     primary_key = "id"
     limit = 50
     resource_name = ""
@@ -52,7 +52,12 @@ class RutterStream(HttpStream, ABC):
         next_page_token: Mapping[str, Any] = None, 
         ) -> MutableMapping[str, Any]:
         
-        params = {"limit": self.limit, "force_fetch": "true", "access_token": self.access_token, "updated_at_min": int(pendulum.parse(self.start_date).timestamp()) * 1000}
+        params = {
+                "limit": self.limit, 
+                "force_fetch": "true", 
+                "access_token": self.access_token, 
+                "updated_at_min": int(pendulum.parse(self.start_date).timestamp()) * 1000
+                }
         if next_page_token:
             params.update(next_page_token)
         return params
@@ -60,6 +65,14 @@ class RutterStream(HttpStream, ABC):
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
         response_json = response.json()
         yield from response_json.get(self.resource_name, [])
+    
+    def request_headers(
+        self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
+    ) -> Mapping[str, Any]:
+        return {
+            "X-Rutter-Version": "2023-03-14",
+        }
+        
 class IncrementalRutterStream(RutterStream, ABC):
     
     @property
