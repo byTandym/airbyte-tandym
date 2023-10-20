@@ -15,13 +15,20 @@ from connector_ops.utils import ConnectorLanguage, SupportLevelEnum, console, ge
 from pipelines import main_logger
 from pipelines.bases import ConnectorWithModifiedFiles
 from pipelines.builds import run_connector_build_pipeline
+from pipelines.connector_changes.base_image_version_migration import (
+    run_connector_base_image_upgrade_pipeline,
+    run_connector_migration_to_base_image_pipeline,
+)
+from pipelines.connector_changes.version_bump import run_connector_version_bump_pipeline
 from pipelines.contexts import ConnectorContext, ContextState, PublishConnectorContext
-from pipelines.format import run_connectors_format_pipelines
+from pipelines.format import run_connector_format_pipeline
 from pipelines.github import update_global_commit_status_check_for_tests
 from pipelines.pipelines.connectors import run_connectors_pipelines
 from pipelines.publish import reorder_contexts, run_connector_publish_pipeline
 from pipelines.tests import run_connector_test_pipeline
 from pipelines.utils import DaggerPipelineCommand, get_connector_modified_files, get_modified_connectors
+from rich.table import Table
+from rich.text import Text
 
 # HELPERS
 
@@ -31,8 +38,8 @@ ALL_CONNECTORS = get_all_connectors_in_repo()
 def validate_environment(is_local: bool, use_remote_secrets: bool):
     """Check if the required environment variables exist."""
     if is_local:
-        if not (os.getcwd().endswith("/airbyte") and Path(".git").is_dir()):
-            raise click.UsageError("You need to run this command from the airbyte repository root.")
+        if not Path(".git").is_dir():
+            raise click.UsageError("You need to run this command from the repository root.")
     else:
         required_env_vars_for_ci = [
             "GCP_GSM_CREDENTIALS",
@@ -54,6 +61,7 @@ def get_selected_connectors_with_modified_files(
     selected_languages: Tuple[str],
     modified: bool,
     metadata_changes_only: bool,
+    metadata_query: str,
     modified_files: Set[Path],
     enable_dependency_scanning: bool = False,
 ) -> List[ConnectorWithModifiedFiles]:
@@ -81,17 +89,22 @@ def get_selected_connectors_with_modified_files(
     selected_connectors_by_name = {c for c in ALL_CONNECTORS if c.technical_name in selected_names}
     selected_connectors_by_support_level = {connector for connector in ALL_CONNECTORS if connector.support_level in selected_support_levels}
     selected_connectors_by_language = {connector for connector in ALL_CONNECTORS if connector.language in selected_languages}
+    selected_connectors_by_query = (
+        {connector for connector in ALL_CONNECTORS if connector.metadata_query_match(metadata_query)} if metadata_query else set()
+    )
+
     non_empty_connector_sets = [
         connector_set
         for connector_set in [
             selected_connectors_by_name,
             selected_connectors_by_support_level,
             selected_connectors_by_language,
+            selected_connectors_by_query,
             selected_modified_connectors,
         ]
         if connector_set
     ]
-    # The selected connectors are the intersection of the selected connectors by name, support_level, language and modified.
+    # The selected connectors are the intersection of the selected connectors by name, support_level, language, simpleeval query and modified.
     selected_connectors = set.intersection(*non_empty_connector_sets) if non_empty_connector_sets else set()
 
     selected_connectors_with_modified_files = []
@@ -134,6 +147,11 @@ def get_selected_connectors_with_modified_files(
     default=False,
     type=bool,
 )
+@click.option(
+    "--metadata-query",
+    help="Filter connectors by metadata query using `simpleeval`. e.g. 'data.ab_internal.ql == 200'",
+    type=str,
+)
 @click.option("--concurrency", help="Number of connector tests pipeline to run in parallel.", default=5, type=int)
 @click.option(
     "--execute-timeout",
@@ -147,6 +165,20 @@ def get_selected_connectors_with_modified_files(
     default=False,
     type=bool,
 )
+@click.option(
+    "--use-local-cdk",
+    is_flag=True,
+    help=("Build with the airbyte-cdk from the local repository. " "This is useful for testing changes to the CDK."),
+    default=False,
+    type=bool,
+)
+@click.option(
+    "--enable-report-auto-open/--disable-report-auto-open",
+    is_flag=True,
+    help=("When enabled, finishes by opening a browser window to display an HTML report."),
+    default=True,
+    type=bool,
+)
 @click.pass_context
 def connectors(
     ctx: click.Context,
@@ -156,9 +188,12 @@ def connectors(
     support_levels: Tuple[str],
     modified: bool,
     metadata_changes_only: bool,
+    metadata_query: str,
     concurrency: int,
     execute_timeout: int,
     enable_dependency_scanning: bool,
+    use_local_cdk: bool,
+    enable_report_auto_open: bool,
 ):
     """Group all the connectors-ci command."""
     validate_environment(ctx.obj["is_local"], use_remote_secrets)
@@ -167,8 +202,17 @@ def connectors(
     ctx.obj["use_remote_secrets"] = use_remote_secrets
     ctx.obj["concurrency"] = concurrency
     ctx.obj["execute_timeout"] = execute_timeout
+    ctx.obj["use_local_cdk"] = use_local_cdk
+    ctx.obj["open_report_in_browser"] = enable_report_auto_open
     ctx.obj["selected_connectors_with_modified_files"] = get_selected_connectors_with_modified_files(
-        names, support_levels, languages, modified, metadata_changes_only, ctx.obj["modified_files"], enable_dependency_scanning
+        names,
+        support_levels,
+        languages,
+        modified,
+        metadata_changes_only,
+        metadata_query,
+        ctx.obj["modified_files"],
+        enable_dependency_scanning,
     )
     log_selected_connectors(ctx.obj["selected_connectors_with_modified_files"])
 
@@ -237,6 +281,7 @@ def test(
             fail_fast=fail_fast,
             fast_tests_only=fast_tests_only,
             code_tests_only=code_tests_only,
+            use_local_cdk=ctx.obj.get("use_local_cdk"),
         )
         for connector in ctx.obj["selected_connectors_with_modified_files"]
     ]
@@ -266,8 +311,15 @@ def test(
 
 
 @connectors.command(cls=DaggerPipelineCommand, help="Build all images for the selected connectors.")
+@click.option(
+    "--use-host-gradle-dist-tar",
+    is_flag=True,
+    help="Use gradle distTar output from host for java connectors.",
+    default=False,
+    type=bool,
+)
 @click.pass_context
-def build(ctx: click.Context) -> bool:
+def build(ctx: click.Context, use_host_gradle_dist_tar: bool) -> bool:
     """Runs a build pipeline for the selected connectors."""
 
     connectors_contexts = [
@@ -285,9 +337,14 @@ def build(ctx: click.Context) -> bool:
             pipeline_start_timestamp=ctx.obj.get("pipeline_start_timestamp"),
             ci_context=ctx.obj.get("ci_context"),
             ci_gcs_credentials=ctx.obj["ci_gcs_credentials"],
+            use_local_cdk=ctx.obj.get("use_local_cdk"),
+            open_report_in_browser=ctx.obj.get("open_report_in_browser"),
+            use_host_gradle_dist_tar=use_host_gradle_dist_tar,
         )
         for connector in ctx.obj["selected_connectors_with_modified_files"]
     ]
+    if use_host_gradle_dist_tar and not ctx.obj["is_local"]:
+        raise Exception("flag --use-host-gradle-dist-tar requires --is-local")
     anyio.run(
         run_connectors_pipelines,
         connectors_contexts,
@@ -356,7 +413,7 @@ def build(ctx: click.Context) -> bool:
     help="The Slack webhook URL to send notifications to.",
     type=click.STRING,
     envvar="SLACK_CHANNEL",
-    default="#publish-on-merge-updates",
+    default="#connector-publish-updates",
 )
 @click.pass_context
 def publish(
@@ -485,13 +542,188 @@ def format_code(ctx: click.Context) -> bool:
     ]
 
     anyio.run(
-        run_connectors_format_pipelines,
+        run_connectors_pipelines,
         connectors_contexts,
-        ctx.obj["ci_git_user"],
-        ctx.obj["ci_github_access_token"],
-        ctx.obj["git_branch"],
-        ctx.obj["is_local"],
+        run_connector_format_pipeline,
+        "Format connectors pipeline",
+        ctx.obj["concurrency"],
+        ctx.obj["dagger_logs_path"],
         ctx.obj["execute_timeout"],
+    )
+
+    return True
+
+
+@connectors.command(cls=DaggerPipelineCommand, help="Upgrades the base image version used by the selected connectors..")
+@click.option("--set-if-not-exists", default=True)
+@click.option(
+    "--docker-hub-username",
+    help="Your username to connect to DockerHub to read the registries.",
+    type=click.STRING,
+    required=True,
+    envvar="DOCKER_HUB_USERNAME",
+)
+@click.option(
+    "--docker-hub-password",
+    help="Your password to connect to DockerHub to read the registries.",
+    type=click.STRING,
+    required=True,
+    envvar="DOCKER_HUB_PASSWORD",
+)
+@click.pass_context
+def upgrade_base_image(ctx: click.Context, set_if_not_exists: bool, docker_hub_username: str, docker_hub_password: str) -> bool:
+    """Upgrades the base image version used by the selected connectors."""
+
+    connectors_contexts = [
+        ConnectorContext(
+            pipeline_name=f"Upgrade base image versions of connector {connector.technical_name}",
+            connector=connector,
+            is_local=ctx.obj["is_local"],
+            git_branch=ctx.obj["git_branch"],
+            git_revision=ctx.obj["git_revision"],
+            ci_report_bucket=ctx.obj["ci_report_bucket_name"],
+            report_output_prefix=ctx.obj["report_output_prefix"],
+            use_remote_secrets=ctx.obj["use_remote_secrets"],
+            gha_workflow_run_url=ctx.obj.get("gha_workflow_run_url"),
+            dagger_logs_url=ctx.obj.get("dagger_logs_url"),
+            pipeline_start_timestamp=ctx.obj.get("pipeline_start_timestamp"),
+            ci_context=ctx.obj.get("ci_context"),
+            ci_gcs_credentials=ctx.obj["ci_gcs_credentials"],
+            ci_git_user=ctx.obj["ci_git_user"],
+            ci_github_access_token=ctx.obj["ci_github_access_token"],
+            open_report_in_browser=False,
+            docker_hub_username=docker_hub_username,
+            docker_hub_password=docker_hub_password,
+        )
+        for connector in ctx.obj["selected_connectors_with_modified_files"]
+    ]
+
+    anyio.run(
+        run_connectors_pipelines,
+        connectors_contexts,
+        run_connector_base_image_upgrade_pipeline,
+        "Upgrade base image pipeline",
+        ctx.obj["concurrency"],
+        ctx.obj["dagger_logs_path"],
+        ctx.obj["execute_timeout"],
+        set_if_not_exists,
+    )
+
+    return True
+
+
+@connectors.command(cls=DaggerPipelineCommand, help="Bump a connector version: update metadata.yaml and changelog.")
+@click.argument("bump-type", type=click.Choice(["patch", "minor", "major"]))
+@click.argument("pull-request-number", type=str)
+@click.argument("changelog-entry", type=str)
+@click.pass_context
+def bump_version(
+    ctx: click.Context,
+    bump_type: str,
+    pull_request_number: str,
+    changelog_entry: str,
+) -> bool:
+    """Bump a connector version: update metadata.yaml and changelog."""
+
+    connectors_contexts = [
+        ConnectorContext(
+            pipeline_name=f"Upgrade base image versions of connector {connector.technical_name}",
+            connector=connector,
+            is_local=ctx.obj["is_local"],
+            git_branch=ctx.obj["git_branch"],
+            git_revision=ctx.obj["git_revision"],
+            ci_report_bucket=ctx.obj["ci_report_bucket_name"],
+            report_output_prefix=ctx.obj["report_output_prefix"],
+            use_remote_secrets=ctx.obj["use_remote_secrets"],
+            gha_workflow_run_url=ctx.obj.get("gha_workflow_run_url"),
+            dagger_logs_url=ctx.obj.get("dagger_logs_url"),
+            pipeline_start_timestamp=ctx.obj.get("pipeline_start_timestamp"),
+            ci_context=ctx.obj.get("ci_context"),
+            ci_gcs_credentials=ctx.obj["ci_gcs_credentials"],
+            ci_git_user=ctx.obj["ci_git_user"],
+            ci_github_access_token=ctx.obj["ci_github_access_token"],
+            open_report_in_browser=False,
+        )
+        for connector in ctx.obj["selected_connectors_with_modified_files"]
+    ]
+
+    anyio.run(
+        run_connectors_pipelines,
+        connectors_contexts,
+        run_connector_version_bump_pipeline,
+        "Version bump pipeline pipeline",
+        ctx.obj["concurrency"],
+        ctx.obj["dagger_logs_path"],
+        ctx.obj["execute_timeout"],
+        bump_type,
+        changelog_entry,
+        pull_request_number,
+    )
+
+    return True
+
+
+@connectors.command(
+    cls=DaggerPipelineCommand,
+    help="Make the selected connectors use our base image: remove dockerfile, update metadata.yaml and update documentation.",
+)
+@click.argument("pull-request-number", type=str)
+@click.option(
+    "--docker-hub-username",
+    help="Your username to connect to DockerHub to read the registries.",
+    type=click.STRING,
+    required=True,
+    envvar="DOCKER_HUB_USERNAME",
+)
+@click.option(
+    "--docker-hub-password",
+    help="Your password to connect to DockerHub to read the registries.",
+    type=click.STRING,
+    required=True,
+    envvar="DOCKER_HUB_PASSWORD",
+)
+@click.pass_context
+def migrate_to_base_image(
+    ctx: click.Context,
+    pull_request_number: str,
+    docker_hub_username: str,
+    docker_hub_password: str,
+) -> bool:
+    """Bump a connector version: update metadata.yaml, changelog and delete legacy files."""
+
+    connectors_contexts = [
+        ConnectorContext(
+            pipeline_name=f"Upgrade base image versions of connector {connector.technical_name}",
+            connector=connector,
+            is_local=ctx.obj["is_local"],
+            git_branch=ctx.obj["git_branch"],
+            git_revision=ctx.obj["git_revision"],
+            ci_report_bucket=ctx.obj["ci_report_bucket_name"],
+            report_output_prefix=ctx.obj["report_output_prefix"],
+            use_remote_secrets=ctx.obj["use_remote_secrets"],
+            gha_workflow_run_url=ctx.obj.get("gha_workflow_run_url"),
+            dagger_logs_url=ctx.obj.get("dagger_logs_url"),
+            pipeline_start_timestamp=ctx.obj.get("pipeline_start_timestamp"),
+            ci_context=ctx.obj.get("ci_context"),
+            ci_gcs_credentials=ctx.obj["ci_gcs_credentials"],
+            ci_git_user=ctx.obj["ci_git_user"],
+            ci_github_access_token=ctx.obj["ci_github_access_token"],
+            open_report_in_browser=False,
+            docker_hub_username=docker_hub_username,
+            docker_hub_password=docker_hub_password,
+        )
+        for connector in ctx.obj["selected_connectors_with_modified_files"]
+    ]
+
+    anyio.run(
+        run_connectors_pipelines,
+        connectors_contexts,
+        run_connector_migration_to_base_image_pipeline,
+        "Migration to base image pipeline",
+        ctx.obj["concurrency"],
+        ctx.obj["dagger_logs_path"],
+        ctx.obj["execute_timeout"],
+        pull_request_number,
     )
 
     return True
@@ -500,6 +732,6 @@ def format_code(ctx: click.Context) -> bool:
 def log_selected_connectors(selected_connectors_with_modified_files: List[ConnectorWithModifiedFiles]) -> None:
     if selected_connectors_with_modified_files:
         selected_connectors_names = [c.technical_name for c in selected_connectors_with_modified_files]
-        main_logger.info(f"Will run on the following connectors: {', '.join(selected_connectors_names)}.")
+        main_logger.info(f"Will run on the following {len(selected_connectors_names)} connectors: {', '.join(selected_connectors_names)}.")
     else:
         main_logger.info("No connectors to run.")

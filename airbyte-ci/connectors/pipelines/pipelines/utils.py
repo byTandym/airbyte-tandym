@@ -54,7 +54,7 @@ async def check_path_in_workdir(container: Container, path: str) -> bool:
     Returns:
         bool: Whether the path exists in the container working directory.
     """
-    workdir = (await container.with_exec(["pwd"]).stdout()).strip()
+    workdir = (await container.with_exec(["pwd"], skip_entrypoint=True).stdout()).strip()
     mounts = await container.mounts()
     if workdir in mounts:
         expected_file_path = Path(workdir[1:]) / path
@@ -621,6 +621,11 @@ def upload_to_gcs(file_path: Path, bucket_name: str, object_name: str, credentia
     gcs_uri = f"gs://{bucket_name}/{object_name}"
     public_url = f"{GCS_PUBLIC_DOMAIN}/{bucket_name}/{object_name}"
     return gcs_uri, public_url
+
+
+def sh_dash_c(lines: List[str]) -> List[str]:
+    """Wrap sequence of commands in shell for safe usage of dagger Container's with_exec method."""
+    return ["sh", "-c", " && ".join(["set -o xtrace"] + lines)]
 
 
 def transform_strs_to_paths(str_paths: List[str]) -> List[Path]:

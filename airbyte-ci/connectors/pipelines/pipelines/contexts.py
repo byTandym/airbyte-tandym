@@ -15,7 +15,7 @@ from typing import List, Optional
 import yaml
 from anyio import Path
 from asyncer import asyncify
-from dagger import Client, Directory, Secret
+from dagger import Client, Directory, File, Secret
 from github import PullRequest
 from pipelines import hacks
 from pipelines.actions import secrets
@@ -53,6 +53,7 @@ class PipelineContext:
         + glob("**/.mypy_cache", recursive=True)
         + glob("**/.DS_Store", recursive=True)
         + glob("**/airbyte_ci_logs", recursive=True)
+        + glob("**/.gradle", recursive=True)
     )
 
     def __init__(
@@ -73,6 +74,7 @@ class PipelineContext:
         ci_gcs_credentials: Optional[str] = None,
         ci_git_user: Optional[str] = None,
         ci_github_access_token: Optional[str] = None,
+        open_report_in_browser: bool = True,
     ):
         """Initialize a pipeline context.
 
@@ -115,6 +117,7 @@ class PipelineContext:
         self.started_at = None
         self.stopped_at = None
         self.secrets_to_mask = []
+        self.open_report_in_browser = open_report_in_browser
         update_commit_status_check(**self.github_commit_status)
 
     @property
@@ -182,6 +185,19 @@ class PipelineContext:
             return None
 
         return f"https://alpha.dagger.cloud/changeByPipelines?filter=dagger.io/git.ref:{self.git_revision}"
+
+    def get_repo_file(self, file_path: str) -> File:
+        """Get a file from the current repository.
+
+        The file is extracted from the host file system.
+
+        Args:
+            file_path (str): Path to the file to get.
+
+        Returns:
+            Path: The selected repo file.
+        """
+        return self.dagger_client.host().file(file_path)
 
     def get_repo_dir(self, subdir: str = ".", exclude: Optional[List[str]] = None, include: Optional[List[str]] = None) -> Directory:
         """Get a directory from the current repository.
@@ -319,6 +335,11 @@ class ConnectorContext(PipelineContext):
         fail_fast: bool = False,
         fast_tests_only: bool = False,
         code_tests_only: bool = False,
+        use_local_cdk: bool = False,
+        use_host_gradle_dist_tar: bool = False,
+        open_report_in_browser: bool = True,
+        docker_hub_username: Optional[str] = None,
+        docker_hub_password: Optional[str] = None,
     ):
         """Initialize a connector context.
 
@@ -340,6 +361,10 @@ class ConnectorContext(PipelineContext):
             fail_fast (bool, optional): Whether to fail fast. Defaults to False.
             fast_tests_only (bool, optional): Whether to run only fast tests. Defaults to False.
             code_tests_only (bool, optional): Whether to ignore non-code tests like QA and metadata checks. Defaults to False.
+            use_host_gradle_dist_tar (bool, optional): Used when developing java connectors with gradle. Defaults to False.
+            open_report_in_browser (bool, optional): Open HTML report in browser window. Defaults to True.
+            docker_hub_username (Optional[str], optional): Docker Hub username to use to read registries. Defaults to None.
+            docker_hub_password (Optional[str], optional): Docker Hub password to use to read registries. Defaults to None.
         """
 
         self.pipeline_name = pipeline_name
@@ -354,6 +379,11 @@ class ConnectorContext(PipelineContext):
         self.fail_fast = fail_fast
         self.fast_tests_only = fast_tests_only
         self.code_tests_only = code_tests_only
+        self.use_local_cdk = use_local_cdk
+        self.use_host_gradle_dist_tar = use_host_gradle_dist_tar
+        self.open_report_in_browser = open_report_in_browser
+        self.docker_hub_username = docker_hub_username
+        self.docker_hub_password = docker_hub_password
 
         super().__init__(
             pipeline_name=pipeline_name,
@@ -371,6 +401,7 @@ class ConnectorContext(PipelineContext):
             ci_gcs_credentials=ci_gcs_credentials,
             ci_git_user=ci_git_user,
             ci_github_access_token=ci_github_access_token,
+            open_report_in_browser=open_report_in_browser,
         )
 
     @property
@@ -436,7 +467,7 @@ class ConnectorContext(PipelineContext):
             Directory: The connector under test source code directory.
         """
         vanilla_connector_dir = self.get_repo_dir(str(self.connector.code_directory), exclude=exclude, include=include)
-        return await hacks.patch_connector_dir(self, vanilla_connector_dir)
+        return await vanilla_connector_dir.with_timestamps(1)
 
     async def __aexit__(
         self, exception_type: Optional[type[BaseException]], exception_value: Optional[BaseException], traceback: Optional[TracebackType]
@@ -516,9 +547,6 @@ class PublishConnectorContext(ConnectorContext):
         self.metadata_bucket_name = metadata_bucket_name
         self.spec_cache_gcs_credentials = sanitize_gcs_credentials(spec_cache_gcs_credentials)
         self.metadata_service_gcs_credentials = sanitize_gcs_credentials(metadata_service_gcs_credentials)
-        self.docker_hub_username = docker_hub_username
-        self.docker_hub_password = docker_hub_password
-
         pipeline_name = f"Publish {connector.technical_name}"
         pipeline_name = pipeline_name + " (pre-release)" if pre_release else pipeline_name
 
@@ -538,6 +566,8 @@ class PublishConnectorContext(ConnectorContext):
             reporting_slack_channel=reporting_slack_channel,
             ci_gcs_credentials=ci_gcs_credentials,
             should_save_report=True,
+            docker_hub_username=docker_hub_username,
+            docker_hub_password=docker_hub_password,
         )
 
     @property
