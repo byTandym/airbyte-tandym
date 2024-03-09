@@ -104,6 +104,14 @@ def test_bulk_stream_read_with_chunks_app_install_ad_labels(mocked_client, confi
 
 
 @patch.object(source_bing_ads.source, "Client")
+def test_bulk_stream_read_with_chunks_ioe_error(mocked_client, config, caplog):
+    app_install_ads = AppInstallAdLabels(mocked_client, config)
+    with pytest.raises(IOError):
+        list(app_install_ads.read_with_chunks(path=Path(__file__).parent / "non-existing-file.csv"))
+    assert "The IO/Error occurred while reading tmp data" in caplog.text
+
+
+@patch.object(source_bing_ads.source, "Client")
 @freeze_time("2023-11-01T12:00:00.000+00:00")
 @pytest.mark.parametrize(
     "stream_state, config_start_date, expected_start_date",
@@ -130,6 +138,28 @@ def test_bulk_stream_stream_state(mocked_client, config):
     assert stream.state == {"some_account_id": {"Modified Time": "2023-05-27T18:00:14.970+00:00"}}
     stream.state = {"Account Id": "some_account_id", "Modified Time": "05/25/2023 18:00:14.970"}
     assert stream.state == {"some_account_id": {"Modified Time": "2023-05-27T18:00:14.970+00:00"}}
+    # stream state saved to connection state
+    stream.state = {
+        "120342748234": {
+            "Modified Time": "2022-11-05T12:07:29.360+00:00"
+        },
+        "27364572345": {
+            "Modified Time": "2022-11-05T12:07:29.360+00:00"
+        },
+        "732645723": {
+            "Modified Time": "2022-11-05T12:07:29.360+00:00"
+        },
+        "837563864": {
+            "Modified Time": "2022-11-05T12:07:29.360+00:00"
+        }
+    }
+    assert stream.state == {
+        "120342748234": {"Modified Time": "2022-11-05T12:07:29.360+00:00"},
+        "27364572345": {"Modified Time": "2022-11-05T12:07:29.360+00:00"},
+        "732645723": {"Modified Time": "2022-11-05T12:07:29.360+00:00"},
+        "837563864": {"Modified Time": "2022-11-05T12:07:29.360+00:00"},
+        "some_account_id": {"Modified Time": "2023-05-27T18:00:14.970+00:00"},
+    }
 
 
 @patch.object(source_bing_ads.source, "Client")

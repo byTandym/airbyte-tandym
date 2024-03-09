@@ -18,8 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Lists;
 import io.airbyte.cdk.integrations.base.Source;
-import io.airbyte.commons.features.EnvVariableFeatureFlags;
-import io.airbyte.commons.features.FeatureFlagsWrapper;
 import io.airbyte.commons.json.Jsons;
 import io.airbyte.commons.util.MoreIterators;
 import io.airbyte.integrations.source.postgres.PostgresTestDatabase.BaseImage;
@@ -29,6 +27,7 @@ import io.airbyte.protocol.models.v0.AirbyteCatalog;
 import io.airbyte.protocol.models.v0.AirbyteMessage;
 import io.airbyte.protocol.models.v0.AirbyteMessage.Type;
 import io.airbyte.protocol.models.v0.AirbyteStateMessage;
+import io.airbyte.protocol.models.v0.AirbyteStateStats;
 import io.airbyte.protocol.models.v0.AirbyteStream;
 import io.airbyte.protocol.models.v0.CatalogHelpers;
 import io.airbyte.protocol.models.v0.ConfiguredAirbyteCatalog;
@@ -125,7 +124,6 @@ class XminPostgresSourceTest {
 
   protected Source source() {
     PostgresSource source = new PostgresSource();
-    source.setFeatureFlags(FeatureFlagsWrapper.overridingUseStreamCapableState(new EnvVariableFeatureFlags(), true));
     return PostgresSource.sshWrappedSource(source);
   }
 
@@ -180,6 +178,10 @@ class XminPostgresSourceTest {
     // Since the third state message would be the final, it should be of xmin type
     assertEquals("xmin", stateTypeFromThirdStateMessage);
 
+    assertEquals(firstStateMessage.getSourceStats().getRecordCount(), 1.0);
+    assertEquals(secondStateMessage.getSourceStats().getRecordCount(), 1.0);
+    assertEquals(thirdStateMessage.getSourceStats().getRecordCount(), 1.0);
+
     // The ctid value from second state message should be bigger than first state message
     assertEquals(1, ctidFromSecondStateMessage.compareTo(ctidFromFirstStateMessage));
 
@@ -215,6 +217,8 @@ class XminPostgresSourceTest {
     assertEquals(2, stateAfterSyncWithCtidState.size());
     assertEquals(secondStateMessage, stateAfterSyncWithCtidState.get(0));
     assertEquals(thirdStateMessage, stateAfterSyncWithCtidState.get(1));
+    assertEquals(stateAfterSyncWithCtidState.get(0).getSourceStats().getRecordCount(), 1.0);
+    assertEquals(stateAfterSyncWithCtidState.get(1).getSourceStats().getRecordCount(), 1.0);
 
     assertMessageSequence(recordsFromSyncRunningWithACtidState);
 
@@ -228,7 +232,8 @@ class XminPostgresSourceTest {
     // Even though no records were emitted, a state message is still expected
     final List<AirbyteStateMessage> stateAfterXminSync = extractStateMessage(syncWithXminStateType);
     assertEquals(1, stateAfterXminSync.size());
-    // Since no records were returned so the state should be the same as before
+    // Since no records were returned so the state should be the same as before without the count.
+    thirdStateMessage.setSourceStats(new AirbyteStateStats().withRecordCount(0.0));
     assertEquals(thirdStateMessage, stateAfterXminSync.get(0));
 
     // We add some data and perform a third read. We should verify that (i) a delete is not captured and
