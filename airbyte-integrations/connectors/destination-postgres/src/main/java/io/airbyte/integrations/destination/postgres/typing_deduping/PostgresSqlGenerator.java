@@ -7,6 +7,7 @@ package io.airbyte.integrations.destination.postgres.typing_deduping;
 import static io.airbyte.cdk.integrations.base.JavaBaseConstants.COLUMN_NAME_AB_EXTRACTED_AT;
 import static io.airbyte.cdk.integrations.base.JavaBaseConstants.COLUMN_NAME_AB_LOADED_AT;
 import static io.airbyte.cdk.integrations.base.JavaBaseConstants.COLUMN_NAME_AB_META;
+import static io.airbyte.cdk.integrations.base.JavaBaseConstants.COLUMN_NAME_AB_RAW_ID;
 import static io.airbyte.cdk.integrations.base.JavaBaseConstants.COLUMN_NAME_DATA;
 import static java.util.Collections.emptyList;
 import static org.jooq.impl.DSL.array;
@@ -19,27 +20,28 @@ import static org.jooq.impl.DSL.quotedName;
 import static org.jooq.impl.DSL.rowNumber;
 import static org.jooq.impl.DSL.val;
 
-import com.google.common.collect.ImmutableMap;
-import io.airbyte.cdk.integrations.base.JavaBaseConstants;
 import io.airbyte.cdk.integrations.destination.NamingConventionTransformer;
-import io.airbyte.cdk.integrations.destination.jdbc.TableDefinition;
 import io.airbyte.cdk.integrations.destination.jdbc.typing_deduping.JdbcSqlGenerator;
 import io.airbyte.integrations.base.destination.typing_deduping.AirbyteProtocolType;
 import io.airbyte.integrations.base.destination.typing_deduping.AirbyteType;
 import io.airbyte.integrations.base.destination.typing_deduping.Array;
 import io.airbyte.integrations.base.destination.typing_deduping.ColumnId;
+import io.airbyte.integrations.base.destination.typing_deduping.Sql;
 import io.airbyte.integrations.base.destination.typing_deduping.StreamConfig;
+import io.airbyte.integrations.base.destination.typing_deduping.StreamId;
 import io.airbyte.integrations.base.destination.typing_deduping.Struct;
 import io.airbyte.protocol.models.v0.DestinationSyncMode;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.jooq.Condition;
 import org.jooq.DataType;
 import org.jooq.Field;
+import org.jooq.Name;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DefaultDataType;
 import org.jooq.impl.SQLDataType;
@@ -48,15 +50,25 @@ public class PostgresSqlGenerator extends JdbcSqlGenerator {
 
   public static final DataType<?> JSONB_TYPE = new DefaultDataType<>(null, Object.class, "jsonb");
 
-  private static final Map<String, String> POSTGRES_TYPE_NAME_TO_JDBC_TYPE = ImmutableMap.of(
-      "numeric", "decimal",
-      "int8", "bigint",
-      "bool", "boolean",
-      "timestamptz", "timestamp with time zone",
-      "timetz", "time with time zone");
-
   public PostgresSqlGenerator(final NamingConventionTransformer namingTransformer) {
     super(namingTransformer);
+  }
+
+  @Override
+  public StreamId buildStreamId(final String namespace, final String name, final String rawNamespaceOverride) {
+    // There is a mismatch between convention used in create table query in SqlOperations vs this.
+    // For postgres specifically, when a create table is issued without a quoted identifier, it will be
+    // converted to lowercase.
+    // To keep it consistent when querying raw table in T+D query, convert it to lowercase.
+    // TODO: This logic should be unified across Raw and final table operations in a single class
+    // operating on a StreamId.
+    return new StreamId(
+        namingTransformer.getNamespace(namespace),
+        namingTransformer.convertStreamName(name),
+        namingTransformer.getNamespace(rawNamespaceOverride).toLowerCase(),
+        namingTransformer.convertStreamName(StreamId.concatenateRawTableName(namespace, name)).toLowerCase(),
+        namespace,
+        name);
   }
 
   @Override
@@ -77,6 +89,54 @@ public class PostgresSqlGenerator extends JdbcSqlGenerator {
   @Override
   protected SQLDialect getDialect() {
     return SQLDialect.POSTGRES;
+  }
+
+  @Override
+  public DataType<?> toDialectType(AirbyteProtocolType airbyteProtocolType) {
+    if (airbyteProtocolType.equals(AirbyteProtocolType.STRING)) {
+      // https://www.postgresql.org/docs/current/datatype-character.html
+      // If specified, the length n must be greater than zero and cannot exceed 10,485,760 (10 MB).
+      // If you desire to store long strings with no specific upper limit,
+      // use text or character varying without a length specifier,
+      // rather than making up an arbitrary length limit.
+      return SQLDataType.VARCHAR;
+    }
+    return super.toDialectType(airbyteProtocolType);
+  }
+
+  @Override
+  public Sql createTable(final StreamConfig stream, final String suffix, final boolean force) {
+    final List<Sql> statements = new ArrayList<>();
+    final Name finalTableName = name(stream.id().finalNamespace(), stream.id().finalName() + suffix);
+
+    statements.add(super.createTable(stream, suffix, force));
+
+    if (stream.destinationSyncMode() == DestinationSyncMode.APPEND_DEDUP) {
+      // An index for our ROW_NUMBER() PARTITION BY pk ORDER BY cursor, extracted_at function
+      final List<Name> pkNames = stream.primaryKey().stream()
+          .map(pk -> quotedName(pk.name()))
+          .toList();
+      statements.add(Sql.of(getDslContext().createIndex().on(
+          finalTableName,
+          Stream.of(
+              pkNames.stream(),
+              // if cursor is present, then a stream containing its name
+              // but if no cursor, then empty stream
+              stream.cursor().stream().map(cursor -> quotedName(cursor.name())),
+              Stream.of(name(COLUMN_NAME_AB_EXTRACTED_AT))).flatMap(Function.identity()).toList())
+          .getSQL()));
+    }
+    statements.add(Sql.of(getDslContext().createIndex().on(
+        finalTableName,
+        name(COLUMN_NAME_AB_EXTRACTED_AT))
+        .getSQL()));
+
+    statements.add(Sql.of(getDslContext().createIndex().on(
+        finalTableName,
+        name(COLUMN_NAME_AB_RAW_ID))
+        .getSQL()));
+
+    return Sql.concat(statements);
   }
 
   @Override
@@ -238,29 +298,6 @@ public class PostgresSqlGenerator extends JdbcSqlGenerator {
         .orderBy(orderedFields).as(ROW_NUMBER_COLUMN_NAME);
   }
 
-  @Override
-  public boolean existingSchemaMatchesStreamConfig(final StreamConfig stream, final TableDefinition existingTable) {
-    // Check that the columns match, with special handling for the metadata columns.
-    // This is mostly identical to the redshift implementation, but swaps super to jsonb
-    final LinkedHashMap<String, String> intendedColumns = stream.columns().entrySet().stream()
-        .collect(LinkedHashMap::new,
-            (map, column) -> map.put(column.getKey().name(), toDialectType(column.getValue()).getTypeName()),
-            LinkedHashMap::putAll);
-    final LinkedHashMap<String, String> actualColumns = existingTable.columns().entrySet().stream()
-        .filter(column -> JavaBaseConstants.V2_FINAL_TABLE_METADATA_COLUMNS.stream()
-            .noneMatch(airbyteColumnName -> airbyteColumnName.equals(column.getKey())))
-        .collect(LinkedHashMap::new,
-            (map, column) -> map.put(column.getKey(), jdbcTypeNameFromPostgresTypeName(column.getValue().type())),
-            LinkedHashMap::putAll);
-
-    final boolean sameColumns = actualColumns.equals(intendedColumns)
-        && "varchar".equals(existingTable.columns().get(JavaBaseConstants.COLUMN_NAME_AB_RAW_ID).type())
-        && "timestamptz".equals(existingTable.columns().get(JavaBaseConstants.COLUMN_NAME_AB_EXTRACTED_AT).type())
-        && "jsonb".equals(existingTable.columns().get(JavaBaseConstants.COLUMN_NAME_AB_META).type());
-
-    return sameColumns;
-  }
-
   /**
    * Extract a raw field, leaving it as jsonb
    */
@@ -270,10 +307,6 @@ public class PostgresSqlGenerator extends JdbcSqlGenerator {
 
   private Field<String> jsonTypeof(final Field<?> field) {
     return function("JSONB_TYPEOF", SQLDataType.VARCHAR, field);
-  }
-
-  private static String jdbcTypeNameFromPostgresTypeName(final String redshiftType) {
-    return POSTGRES_TYPE_NAME_TO_JDBC_TYPE.getOrDefault(redshiftType, redshiftType);
   }
 
 }
