@@ -26,7 +26,7 @@ from airbyte_cdk.sources.connector_state_manager import ConnectorStateManager
 from airbyte_cdk.sources.message import InMemoryMessageRepository, MessageRepository
 from airbyte_cdk.sources.streams import Stream
 from airbyte_cdk.sources.streams.concurrent.adapters import StreamFacade
-from airbyte_cdk.sources.streams.concurrent.cursor import Cursor, NoopCursor
+from airbyte_cdk.sources.streams.concurrent.cursor import Cursor, FinalStateCursor
 from airbyte_cdk.sources.streams.concurrent.partitions.partition import Partition
 from airbyte_cdk.sources.streams.concurrent.partitions.record import Record
 from airbyte_cdk.sources.streams.core import StreamData
@@ -105,8 +105,9 @@ def _stream(slice_to_partition_mapping, slice_logger, logger, message_repository
     return _MockStream(slice_to_partition_mapping)
 
 
-def _concurrent_stream(slice_to_partition_mapping, slice_logger, logger, message_repository, cursor: Cursor = NoopCursor()):
+def _concurrent_stream(slice_to_partition_mapping, slice_logger, logger, message_repository, cursor: Optional[Cursor] = None):
     stream = _stream(slice_to_partition_mapping, slice_logger, logger, message_repository)
+    cursor = cursor or FinalStateCursor(stream_name=stream.name, stream_namespace=stream.namespace, message_repository=message_repository)
     source = Mock()
     source._slice_logger = slice_logger
     source.message_repository = message_repository
@@ -124,6 +125,15 @@ def _incremental_stream(slice_to_partition_mapping, slice_logger, logger, messag
 def _incremental_concurrent_stream(slice_to_partition_mapping, slice_logger, logger, message_repository, cursor):
     stream = _concurrent_stream(slice_to_partition_mapping, slice_logger, logger, message_repository, cursor)
     return stream
+
+
+def _stream_with_no_cursor_field(slice_to_partition_mapping, slice_logger, logger, message_repository):
+    def get_updated_state(current_stream_state: MutableMapping[str, Any], latest_record: Mapping[str, Any]) -> MutableMapping[str, Any]:
+        raise Exception("I shouldn't be invoked by a full_refresh stream")
+
+    mock_stream = _MockStream(slice_to_partition_mapping)
+    mock_stream.get_updated_state = get_updated_state
+    return mock_stream
 
 
 @pytest.mark.parametrize(
@@ -177,7 +187,7 @@ def test_full_refresh_read_a_single_slice_with_debug(constructor):
 
     actual_records = _read(stream, configured_stream, logger, slice_logger, message_repository, state_manager, internal_config)
 
-    assert expected_records == actual_records
+    assert actual_records == expected_records
 
 
 @pytest.mark.parametrize(
@@ -223,7 +233,7 @@ def test_full_refresh_read_a_single_slice(constructor):
 
     actual_records = _read(stream, configured_stream, logger, slice_logger, message_repository, state_manager, internal_config)
 
-    assert expected_records == actual_records
+    assert actual_records == expected_records
 
 
 @pytest.mark.parametrize(
@@ -231,9 +241,10 @@ def test_full_refresh_read_a_single_slice(constructor):
     [
         pytest.param(_stream, id="synchronous_reader"),
         pytest.param(_concurrent_stream, id="concurrent_reader"),
+        pytest.param(_stream_with_no_cursor_field, id="no_cursor_field"),
     ],
 )
-def test_full_refresh_read_a_two_slices(constructor):
+def test_full_refresh_read_two_slices(constructor):
     # This test verifies that a concurrent stream adapted from a Stream behaves the same as the Stream object
     # It is done by running the same test cases on both streams
     configured_stream = ConfiguredAirbyteStream(stream=AirbyteStream(name="mock_stream", supported_sync_modes=[SyncMode.full_refresh], json_schema={}), sync_mode=SyncMode.full_refresh,destination_sync_mode=DestinationSyncMode.overwrite)
@@ -260,7 +271,7 @@ def test_full_refresh_read_a_two_slices(constructor):
     ]
 
     # Temporary check to only validate the final state message for synchronous sources since it has not been implemented for concurrent yet
-    if constructor == _stream:
+    if constructor == _stream or constructor == _stream_with_no_cursor_field:
         expected_records.append(
             AirbyteMessage(
                 type=MessageType.STATE,
@@ -278,7 +289,7 @@ def test_full_refresh_read_a_two_slices(constructor):
 
     for record in expected_records:
         assert record in actual_records
-    assert len(expected_records) == len(actual_records)
+    assert len(actual_records) == len(expected_records)
 
 
 def test_incremental_read_two_slices():
@@ -313,7 +324,7 @@ def test_incremental_read_two_slices():
 
     for record in expected_records:
         assert record in actual_records
-    assert len(expected_records) == len(actual_records)
+    assert len(actual_records) == len(expected_records)
 
 
 def test_concurrent_incremental_read_two_slices():
@@ -350,7 +361,7 @@ def test_concurrent_incremental_read_two_slices():
 
     for record in expected_records:
         assert record in actual_records
-    assert len(expected_records) == len(actual_records)
+    assert len(actual_records) == len(expected_records)
 
     # We don't have a real source that reads from the message_repository for state, so we read from the queue directly to verify
     # the cursor observed records correctly and updated partition states
