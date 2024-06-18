@@ -182,9 +182,7 @@ public class MongoDbSource extends BaseConnector implements Source {
         streams,
         stateManager,
         mongoClient.getDatabase(sourceConfig.getDatabaseName()),
-        sourceConfig,
-        true,
-        true);
+        sourceConfig);
 
     return fullRefreshIterators;
   }

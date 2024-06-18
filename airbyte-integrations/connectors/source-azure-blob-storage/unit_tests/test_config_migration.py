@@ -1,6 +1,5 @@
 # Copyright (c) 2024 Airbyte, Inc., all rights reserved.
 
-
 import json
 import os
 from typing import Any, Mapping

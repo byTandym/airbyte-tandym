@@ -6,8 +6,7 @@
 import sys
 
 from airbyte_cdk.entrypoint import launch
-
-from .source import SourceAshby
+from source_ashby import SourceAshby
 
 
 def run():

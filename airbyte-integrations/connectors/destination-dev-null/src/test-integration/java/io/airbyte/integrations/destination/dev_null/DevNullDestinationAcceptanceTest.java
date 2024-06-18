@@ -14,8 +14,6 @@ import io.airbyte.protocol.models.v0.AirbyteRecordMessage;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 
 public class DevNullDestinationAcceptanceTest extends DestinationAcceptanceTest {
 
@@ -61,18 +59,8 @@ public class DevNullDestinationAcceptanceTest extends DestinationAcceptanceTest 
   }
 
   @Override
-  // Skip because `retrieveRecords` returns an empty list at all times.
-  @Disabled
-  @Test
-  public void testSyncNotFailsWithNewFields() {}
-
-  @Override
-  // This test assumes that dedup support means normalization support.
-  // Override it to do nothing.
-  @Disabled
-  @Test
-  public void testIncrementalDedupeSync() throws Exception {
-    super.testIncrementalDedupeSync();
+  public void testSyncNotFailsWithNewFields() {
+    // Skip because `retrieveRecords` returns an empty list at all times.
   }
 
 }

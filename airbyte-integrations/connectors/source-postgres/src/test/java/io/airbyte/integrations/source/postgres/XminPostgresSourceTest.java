@@ -59,8 +59,7 @@ class XminPostgresSourceTest {
           Field.of("power", JsonSchemaType.NUMBER))
           .withSupportedSyncModes(Lists.newArrayList(SyncMode.FULL_REFRESH, SyncMode.INCREMENTAL))
           .withSourceDefinedCursor(true)
-          .withSourceDefinedPrimaryKey(List.of(List.of("id")))
-          .withIsResumable(true),
+          .withSourceDefinedPrimaryKey(List.of(List.of("id"))),
       CatalogHelpers.createAirbyteStream(
           STREAM_NAME + "2",
           SCHEMA_NAME,
@@ -68,8 +67,7 @@ class XminPostgresSourceTest {
           Field.of("name", JsonSchemaType.STRING),
           Field.of("power", JsonSchemaType.NUMBER))
           .withSupportedSyncModes(Lists.newArrayList(SyncMode.FULL_REFRESH, SyncMode.INCREMENTAL))
-          .withSourceDefinedCursor(true)
-          .withIsResumable(true),
+          .withSourceDefinedCursor(true),
       CatalogHelpers.createAirbyteStream(
           "names",
           SCHEMA_NAME,
@@ -78,8 +76,7 @@ class XminPostgresSourceTest {
           Field.of("power", JsonSchemaType.NUMBER))
           .withSupportedSyncModes(Lists.newArrayList(SyncMode.FULL_REFRESH, SyncMode.INCREMENTAL))
           .withSourceDefinedCursor(true)
-          .withSourceDefinedPrimaryKey(List.of(List.of("first_name"), List.of("last_name")))
-          .withIsResumable(true)));
+          .withSourceDefinedPrimaryKey(List.of(List.of("first_name"), List.of("last_name")))));
 
   protected static final ConfiguredAirbyteCatalog CONFIGURED_XMIN_CATALOG = toConfiguredXminCatalog(CATALOG);
 
@@ -266,10 +263,9 @@ class XminPostgresSourceTest {
         .get("xmin_raw_value").asLong());
   }
 
-  // Assert that the trace message is the last message to be emitted.
+  // Assert that the state message is the last message to be emitted.
   protected static void assertMessageSequence(final List<AirbyteMessage> messages) {
-    assertEquals(Type.TRACE, messages.get(messages.size() - 1).getType());
-    assertEquals(Type.STATE, messages.get(messages.size() - 2).getType());
+    assertEquals(Type.STATE, messages.get(messages.size() - 1).getType());
   }
 
   private static ConfiguredAirbyteCatalog toConfiguredXminCatalog(final AirbyteCatalog catalog) {

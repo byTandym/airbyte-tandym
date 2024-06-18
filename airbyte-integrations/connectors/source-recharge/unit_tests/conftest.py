@@ -18,3 +18,5 @@ def config() -> Mapping[str, Any]:
 @pytest.fixture(name="logger_mock")
 def logger_mock_fixture() -> None:
     return patch("source_recharge.source.AirbyteLogger")
+
+

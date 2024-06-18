@@ -5,65 +5,46 @@
   margin-right: 10px;
 }
 
-div.connectorMetadataCallout  {
+.connectorMetadata {
+  background: var(--ifm-color-info-contrast-background);
+  border-radius: 2px;
+  width: 100%;
+  font-size: smaller;
+  margin: 0;
+  padding: 5px;
   margin-bottom: 15px;
 }
 
-.connectorMetadata {
-  width: 100%;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  row-gap: 2px;
-}
-
-.metadataStat {
+.connectorMetadata > div {
   display: flex;
   align-items: center;
-  font-size: 0.75rem;
-  font-weight: var(--ifm-font-weight-normal);
-  flex-wrap: wrap;
+  gap: 0.2em;
 }
 
-.metadataStatLabel {
-  display: inline-flex;
-  align-items: center;
-  font-weight: var(--ifm-font-weight-semibold);
-  margin-right: 5px;
-  flex: 0 1 auto;
+.connectorMetadata dt {
+  display: inline;
+  font-weight: bold;
 }
 
-.metadataStatValue {
-  display: inline-flex;
-  align-items: center;
+.connectorMetadata dd {
+  display: inline;
   margin: 0;
-  gap: 5px;
-  flex: 0 1 auto;
-  width: fit-content;
 }
 
-.deemphasizeText {
-  color: var(--color-grey-400);
-  white-space: nowrap;
-}
-
-.metadataStatValue > * {
-  display: inline-flex;
-  align-items: center;
+.connectorMetadata dt::after {
+  content: ": ";
 }
 
 .connectorMetadata .availability {
   display: inline-flex;
-  align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  margin-left: 2px;
 }
 
 .connectorMetadata .availability > span {
   display: inline-flex;
   align-items: center;
-  column-gap: 2px;
-  flex: 0 1 auto;
+  gap: 2px;
 }
 
 .connectorMetadata .availability .unavailable {
@@ -72,15 +53,4 @@ div.connectorMetadataCallout  {
 
 [data-theme="dark"] .connectorMetadata .availability .unavailable {
   color: var(--ifm-color-emphasis-400);
-}
-
-.metricIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.metricIcon svg {
-  height: 12px;
-  width: fit-content;
 }

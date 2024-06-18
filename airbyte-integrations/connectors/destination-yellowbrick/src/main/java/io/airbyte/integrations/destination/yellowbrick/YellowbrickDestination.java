@@ -111,7 +111,7 @@ public class YellowbrickDestination extends AbstractJdbcDestination<YellowbrickS
   }
 
   @Override
-  protected JdbcSqlGenerator getSqlGenerator(final JsonNode config) {
+  protected JdbcSqlGenerator getSqlGenerator() {
     return new YellowbrickSqlGenerator(new YellowbrickSQLNameTransformer());
   }
 

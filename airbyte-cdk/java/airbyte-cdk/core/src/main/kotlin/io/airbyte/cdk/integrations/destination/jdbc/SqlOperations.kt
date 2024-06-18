@@ -6,6 +6,8 @@ package io.airbyte.cdk.integrations.destination.jdbc
 import com.fasterxml.jackson.databind.JsonNode
 import io.airbyte.cdk.db.jdbc.JdbcDatabase
 import io.airbyte.cdk.integrations.destination.async.model.PartialAirbyteMessage
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * SQL queries required for successfully syncing to a destination connector. These operations
@@ -27,7 +29,7 @@ interface SqlOperations {
      * @throws Exception exception
      */
     @Throws(Exception::class)
-    fun createSchemaIfNotExists(database: JdbcDatabase?, schemaName: String)
+    fun createSchemaIfNotExists(database: JdbcDatabase?, schemaName: String?)
 
     /**
      * Denotes whether the schema exists in destination database
@@ -137,5 +139,7 @@ interface SqlOperations {
      */
     val isSchemaRequired: Boolean
 
-    companion object {}
+    companion object {
+        val LOGGER: Logger = LoggerFactory.getLogger(SqlOperations::class.java)
+    }
 }

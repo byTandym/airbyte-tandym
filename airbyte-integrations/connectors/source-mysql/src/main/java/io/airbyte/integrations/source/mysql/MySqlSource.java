@@ -46,19 +46,14 @@ import io.airbyte.cdk.integrations.source.jdbc.JdbcSSLConnectionUtils.SslMode;
 import io.airbyte.cdk.integrations.source.relationaldb.DbSourceDiscoverUtil;
 import io.airbyte.cdk.integrations.source.relationaldb.InitialLoadHandler;
 import io.airbyte.cdk.integrations.source.relationaldb.TableInfo;
-import io.airbyte.cdk.integrations.source.relationaldb.state.NonResumableStateMessageProducer;
-import io.airbyte.cdk.integrations.source.relationaldb.state.SourceStateMessageProducer;
 import io.airbyte.cdk.integrations.source.relationaldb.state.StateGeneratorUtils;
 import io.airbyte.cdk.integrations.source.relationaldb.state.StateManager;
 import io.airbyte.cdk.integrations.source.relationaldb.state.StateManagerFactory;
-import io.airbyte.cdk.integrations.source.relationaldb.streamstatus.StreamStatusTraceEmitterIterator;
 import io.airbyte.commons.exceptions.ConfigErrorException;
 import io.airbyte.commons.functional.CheckedConsumer;
 import io.airbyte.commons.json.Jsons;
 import io.airbyte.commons.map.MoreMaps;
-import io.airbyte.commons.stream.AirbyteStreamStatusHolder;
 import io.airbyte.commons.util.AutoCloseableIterator;
-import io.airbyte.commons.util.AutoCloseableIterators;
 import io.airbyte.integrations.source.mysql.cdc.CdcConfigurationHelper;
 import io.airbyte.integrations.source.mysql.cursor_based.MySqlCursorBasedStateManager;
 import io.airbyte.integrations.source.mysql.initialsync.MySqlInitialLoadGlobalStateManager;
@@ -70,9 +65,17 @@ import io.airbyte.integrations.source.mysql.initialsync.MySqlInitialReadUtil.Cur
 import io.airbyte.integrations.source.mysql.initialsync.MySqlInitialReadUtil.InitialLoadStreams;
 import io.airbyte.integrations.source.mysql.internal.models.CursorBasedStatus;
 import io.airbyte.protocol.models.CommonField;
-import io.airbyte.protocol.models.v0.*;
+import io.airbyte.protocol.models.v0.AirbyteCatalog;
+import io.airbyte.protocol.models.v0.AirbyteConnectionStatus;
 import io.airbyte.protocol.models.v0.AirbyteConnectionStatus.Status;
+import io.airbyte.protocol.models.v0.AirbyteMessage;
 import io.airbyte.protocol.models.v0.AirbyteStateMessage.AirbyteStateType;
+import io.airbyte.protocol.models.v0.AirbyteStream;
+import io.airbyte.protocol.models.v0.AirbyteStreamNameNamespacePair;
+import io.airbyte.protocol.models.v0.ConfiguredAirbyteCatalog;
+import io.airbyte.protocol.models.v0.ConfiguredAirbyteStream;
+import io.airbyte.protocol.models.v0.ConnectorSpecification;
+import io.airbyte.protocol.models.v0.SyncMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
@@ -90,7 +93,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.sql.DataSource;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,8 +128,11 @@ public class MySqlSource extends AbstractJdbcSource<MysqlType> implements Source
   public static final String CDC_LOG_FILE = "_ab_cdc_log_file";
   public static final String CDC_LOG_POS = "_ab_cdc_log_pos";
   public static final String CDC_DEFAULT_CURSOR = "_ab_cdc_cursor";
+  public static final List<String> SSL_PARAMETERS = List.of(
+      "useSSL=true",
+      "requireSSL=true");
 
-  public static Source sshWrappedSource(final MySqlSource source) {
+  public static Source sshWrappedSource(MySqlSource source) {
     return new SshWrappedSource(source, JdbcUtils.HOST_LIST_KEY, JdbcUtils.PORT_LIST_KEY);
   }
 
@@ -141,7 +146,7 @@ public class MySqlSource extends AbstractJdbcSource<MysqlType> implements Source
   }
 
   @Override
-  public @NotNull ConnectorSpecification spec() throws Exception {
+  public ConnectorSpecification spec() throws Exception {
     if (cloudDeploymentMode()) {
       return getCloudDeploymentSpec(super.spec());
     }
@@ -149,7 +154,7 @@ public class MySqlSource extends AbstractJdbcSource<MysqlType> implements Source
   }
 
   @Override
-  public AirbyteConnectionStatus check(final @NotNull JsonNode config) throws Exception {
+  public AirbyteConnectionStatus check(final JsonNode config) throws Exception {
     // #15808 Disallow connecting to db with disable, prefer or allow SSL mode when connecting directly
     // and not over SSH tunnel
     if (cloudDeploymentMode()) {
@@ -190,13 +195,13 @@ public class MySqlSource extends AbstractJdbcSource<MysqlType> implements Source
 
   @Override
   protected void initializeForStateManager(final JdbcDatabase database,
-                                           final @NotNull ConfiguredAirbyteCatalog catalog,
-                                           final @NotNull Map<String, TableInfo<CommonField<MysqlType>>> tableNameToTable,
-                                           final @NotNull StateManager stateManager) {
+                                           final ConfiguredAirbyteCatalog catalog,
+                                           final Map<String, TableInfo<CommonField<MysqlType>>> tableNameToTable,
+                                           final StateManager stateManager) {
     if (initialLoadStateManager != null) {
       return;
     }
-    final var sourceConfig = database.getSourceConfig();
+    var sourceConfig = database.getSourceConfig();
 
     if (isCdc(sourceConfig)) {
       isSavedOffsetStillPresentOnServer = isSavedOffsetStillPresentOnServer(database, catalog, stateManager);
@@ -228,11 +233,6 @@ public class MySqlSource extends AbstractJdbcSource<MysqlType> implements Source
           Optional.empty(),
           getTableSizeInfoForStreams(database, catalog.getStreams(), getQuoteString()));
     }
-  }
-
-  @Override
-  protected SourceStateMessageProducer<AirbyteMessage> getSourceStateProducerForNonResumableFullRefreshStream(final JdbcDatabase database) {
-    return new NonResumableStateMessageProducer<>(isCdc(database.getSourceConfig()), initialLoadStateManager);
   }
 
   private static AirbyteStream overrideSyncModes(final AirbyteStream stream) {
@@ -298,7 +298,7 @@ public class MySqlSource extends AbstractJdbcSource<MysqlType> implements Source
   }
 
   @Override
-  public AirbyteCatalog discover(final JsonNode config) {
+  public AirbyteCatalog discover(final JsonNode config) throws Exception {
     final AirbyteCatalog catalog = super.discover(config);
 
     if (isCdc(config)) {
@@ -480,11 +480,10 @@ public class MySqlSource extends AbstractJdbcSource<MysqlType> implements Source
             new MySqlInitialLoadHandler(sourceConfig, database, new MySqlSourceOperations(), getQuoteString(), initialLoadStateManager,
                 Optional.of(namespacePair -> Jsons.jsonNode(pairToCursorBasedStatus.get(convertNameNamespacePairFromV0(namespacePair)))),
                 getTableSizeInfoForStreams(database, catalog.getStreams(), getQuoteString()));
-        // Cursor based incremental iterators are decorated with start and complete status traces
         final List<AutoCloseableIterator<AirbyteMessage>> initialLoadIterator = new ArrayList<>(initialLoadHandler.getIncrementalIterators(
             new ConfiguredAirbyteCatalog().withStreams(initialLoadStreams.streamsForInitialLoad()),
             tableNameToTable,
-            emittedAt, true, true));
+            emittedAt));
 
         // Build Cursor based iterator
         final List<AutoCloseableIterator<AirbyteMessage>> cursorBasedIterator =
@@ -650,19 +649,6 @@ public class MySqlSource extends AbstractJdbcSource<MysqlType> implements Source
   public enum ReplicationMethod {
     STANDARD,
     CDC
-  }
-
-  @NotNull
-  @Override
-  public AutoCloseableIterator<AirbyteMessage> augmentWithStreamStatus(@NotNull final ConfiguredAirbyteStream airbyteStream,
-                                                                       @NotNull final AutoCloseableIterator<AirbyteMessage> streamItrator) {
-    final var pair =
-        new io.airbyte.protocol.models.AirbyteStreamNameNamespacePair(airbyteStream.getStream().getName(), airbyteStream.getStream().getNamespace());
-    final var starterStatus =
-        new StreamStatusTraceEmitterIterator(new AirbyteStreamStatusHolder(pair, AirbyteStreamStatusTraceMessage.AirbyteStreamStatus.STARTED));
-    final var completeStatus =
-        new StreamStatusTraceEmitterIterator(new AirbyteStreamStatusHolder(pair, AirbyteStreamStatusTraceMessage.AirbyteStreamStatus.COMPLETE));
-    return AutoCloseableIterators.concatWithEagerClose(starterStatus, streamItrator, completeStatus);
   }
 
 }

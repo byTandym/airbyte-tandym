@@ -141,13 +141,15 @@ open class S3StorageOperations(
         // issue reduces risk of misidentifying errors or reporting a transient error.
         val areAllExceptionsAuthExceptions: Boolean =
             exceptionsThrown
-                .filterIsInstance<AmazonS3Exception>()
+                .stream()
+                .filter { e: Exception -> e is AmazonS3Exception }
                 .map { s3e: Exception -> (s3e as AmazonS3Exception).statusCode }
-                .count { o: Int ->
+                .filter { o: Int? ->
                     ConnectorExceptionUtil.HTTP_AUTHENTICATION_ERROR_CODES.contains(
                         o,
                     )
-                } == exceptionsThrown.size
+                }
+                .count() == exceptionsThrown.size.toLong()
         if (areAllExceptionsAuthExceptions) {
             throw ConfigErrorException(exceptionsThrown[0].message!!, exceptionsThrown[0])
         } else {
@@ -308,6 +310,7 @@ open class S3StorageOperations(
         while (objects.objectSummaries.size > 0) {
             val keysToDelete: List<DeleteObjectsRequest.KeyVersion> =
                 objects.objectSummaries
+                    .stream()
                     .filter { obj: S3ObjectSummary ->
                         regexFormat
                             .matcher(
@@ -320,7 +323,7 @@ open class S3StorageOperations(
                             obj.key,
                         )
                     }
-
+                    .toList()
             cleanUpObjects(bucket, keysToDelete)
             logger.info {
                 "Storage bucket $objectPath has been cleaned-up (${keysToDelete.size} objects matching $regexFormat were deleted)..."
@@ -360,6 +363,7 @@ open class S3StorageOperations(
         while (objects.objectSummaries.size > 0) {
             val keysToDelete: List<DeleteObjectsRequest.KeyVersion> =
                 objects.objectSummaries
+                    .stream()
                     .filter { obj: S3ObjectSummary ->
                         stagedFiles.isEmpty() ||
                             stagedFiles.contains(
@@ -371,7 +375,7 @@ open class S3StorageOperations(
                             obj.key,
                         )
                     }
-
+                    .toList()
             cleanUpObjects(bucket, keysToDelete)
             logger.info {
                 "Storage bucket $objectPath has been cleaned-up (${keysToDelete.size} objects were deleted)..."
@@ -390,8 +394,8 @@ open class S3StorageOperations(
     ) {
         if (keysToDelete.isNotEmpty()) {
             logger.info {
-                "Deleting objects ${keysToDelete.map { obj: DeleteObjectsRequest.KeyVersion -> obj.key }
-                .joinToString(separator = ", ")}"
+                "Deleting objects ${keysToDelete.stream().map { obj: DeleteObjectsRequest.KeyVersion -> obj.key }
+                .toList().joinToString(separator = ", ")}"
             }
             s3Client.deleteObjects(DeleteObjectsRequest(bucket).withKeys(keysToDelete))
         }

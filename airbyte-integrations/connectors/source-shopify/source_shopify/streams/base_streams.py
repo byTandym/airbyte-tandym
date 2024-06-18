@@ -7,14 +7,12 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from functools import cached_property
-from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional, Union
+from typing import Any, Dict, Iterable, Mapping, MutableMapping, Optional, Union
 from urllib.parse import parse_qsl, urlparse
 
 import pendulum as pdm
 import requests
-from airbyte_cdk.sources.streams.core import StreamData
 from airbyte_cdk.sources.streams.http import HttpStream
-from airbyte_protocol.models import SyncMode
 from requests.exceptions import RequestException
 from source_shopify.shopify_graphql.bulk.job import ShopifyBulkManager
 from source_shopify.shopify_graphql.bulk.query import ShopifyBulkQuery, ShopifyBulkTemplates
@@ -30,7 +28,7 @@ class ShopifyStream(HttpStream, ABC):
     logger = logging.getLogger("airbyte")
 
     # Latest Stable Release
-    api_version = "2024-04"
+    api_version = "2023-07"
     # Page size
     limit = 250
 
@@ -633,6 +631,7 @@ class IncrementalShopifyGraphQlBulkStream(IncrementalShopifyStream):
     filter_field = "updated_at"
     cursor_field = "updated_at"
     data_field = "graphql"
+    http_method = "POST"
 
     parent_stream_class: Optional[Union[ShopifyStream, IncrementalShopifyStream]] = None
 
@@ -645,7 +644,6 @@ class IncrementalShopifyGraphQlBulkStream(IncrementalShopifyStream):
             session=self._session,
             base_url=f"{self.url_base}{self.path()}",
             stream_name=self.name,
-            query=self.query,
         )
         # overide the default job slice size, if provided (it's auto-adjusted, later on)
         self.bulk_window_in_days = config.get("bulk_window_in_days")
@@ -689,6 +687,27 @@ class IncrementalShopifyGraphQlBulkStream(IncrementalShopifyStream):
         """NOT USED FOR BULK OPERATIONS TO SAVE THE RATE LIMITS AND TIME FOR THE SYNC."""
         return None
 
+    def request_params(self, **kwargs) -> MutableMapping[str, Any]:
+        """
+        NOT USED FOR SHOPIFY BULK OPERARTIONS.
+        https://shopify.dev/docs/api/usage/bulk-operations/queries#write-a-bulk-operation
+        """
+        return {}
+
+    def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
+        """
+        NOT USED FOR SHOPIFY BULK OPERATIONS.
+        https://shopify.dev/docs/api/usage/bulk-operations/queries#write-a-bulk-operation
+        """
+        return None
+
+    def request_body_json(self, stream_slice: Optional[Mapping[str, Any]] = None, **kwargs) -> Mapping[str, Any]:
+        """
+        Override for _send_request CDK method to send HTTP request to Shopify BULK Operatoions.
+        https://shopify.dev/docs/api/usage/bulk-operations/queries#bulk-query-overview
+        """
+        return {"query": ShopifyBulkTemplates.prepare(stream_slice.get("query"))}
+
     def get_updated_state(
         self, current_stream_state: MutableMapping[str, Any], latest_record: Mapping[str, Any]
     ) -> MutableMapping[str, Any]:
@@ -729,7 +748,7 @@ class IncrementalShopifyGraphQlBulkStream(IncrementalShopifyStream):
             return self.config.get("start_date")
 
     def emit_slice_message(self, slice_start: datetime, slice_end: datetime) -> None:
-        slice_size_message = f"Slice size: `P{round(self.job_manager.job_size, 1)}D`"
+        slice_size_message = f"Slice size: `P{round(self.job_manager._job_size, 1)}D`"
         self.logger.info(f"Stream: `{self.name}` requesting BULK Job for period: {slice_start} -- {slice_end}. {slice_size_message}")
 
     @stream_state_cache.cache_stream_state
@@ -742,23 +761,21 @@ class IncrementalShopifyGraphQlBulkStream(IncrementalShopifyStream):
                 self.job_manager.job_size_normalize(start, end)
                 slice_end = self.job_manager.get_adjusted_job_start(start)
                 self.emit_slice_message(start, slice_end)
-                yield {"start": start.to_rfc3339_string(), "end": slice_end.to_rfc3339_string()}
+                yield {"query": self.query.get(self.filter_field, start.to_rfc3339_string(), slice_end.to_rfc3339_string())}
                 # increment the end of the slice or reduce the next slice
                 start = self.job_manager.get_adjusted_job_end(start, slice_end)
         else:
             # for the streams that don't support filtering
-            yield {}
+            yield {"query": self.query.get()}
 
-    def read_records(
+    def process_bulk_results(
         self,
-        sync_mode: SyncMode,
-        cursor_field: Optional[List[str]] = None,
-        stream_slice: Optional[Mapping[str, Any]] = None,
+        response: requests.Response,
         stream_state: Optional[Mapping[str, Any]] = None,
-    ) -> Iterable[StreamData]:
-        self.job_manager.create_job(stream_slice, self.filter_field)
-        stream_state = stream_state_cache.cached_state.get(self.name, {self.cursor_field: self.default_state_comparison_value})
-
+    ) -> Iterable[Mapping[str, Any]]:
+        # process the CREATED Job prior to other actions
+        self.job_manager.job_process_created(response)
+        # get results fetched from COMPLETED BULK Job
         filename = self.job_manager.job_check_for_completion()
         # the `filename` could be `None`, meaning there are no data available for the slice period.
         if filename:
@@ -768,3 +785,8 @@ class IncrementalShopifyGraphQlBulkStream(IncrementalShopifyStream):
                 self.record_producer.read_file(filename)
             )
             yield from self.filter_records_newer_than_state(stream_state, records)
+
+    def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
+        # get the cached substream state, to avoid state collisions for Incremental Syncs
+        stream_state = stream_state_cache.cached_state.get(self.name, {self.cursor_field: self.default_state_comparison_value})
+        yield from self.process_bulk_results(response, stream_state)

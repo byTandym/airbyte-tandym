@@ -12,25 +12,23 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import io.airbyte.cdk.integrations.base.AirbyteTraceMessageUtility;
 import io.airbyte.cdk.integrations.debezium.AirbyteDebeziumHandler;
-import io.airbyte.cdk.integrations.source.relationaldb.streamstatus.StreamStatusTraceEmitterIterator;
 import io.airbyte.commons.exceptions.ConfigErrorException;
 import io.airbyte.commons.json.Jsons;
-import io.airbyte.commons.stream.AirbyteStreamStatusHolder;
 import io.airbyte.commons.util.AutoCloseableIterator;
 import io.airbyte.commons.util.AutoCloseableIterators;
 import io.airbyte.integrations.source.mongodb.InitialSnapshotHandler;
 import io.airbyte.integrations.source.mongodb.MongoDbSourceConfig;
 import io.airbyte.integrations.source.mongodb.MongoUtil;
 import io.airbyte.integrations.source.mongodb.state.MongoDbStateManager;
-import io.airbyte.protocol.models.v0.*;
 import io.airbyte.protocol.models.v0.AirbyteMessage;
 import io.airbyte.protocol.models.v0.ConfiguredAirbyteCatalog;
 import io.airbyte.protocol.models.v0.ConfiguredAirbyteStream;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.Properties;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.bson.BsonDocument;
 import org.bson.BsonTimestamp;
 import org.bson.Document;
@@ -69,7 +67,7 @@ public class MongoDbCdcInitializer {
    * @param mongoClient The {@link MongoClient} used to interact with the target MongoDB server.
    * @param cdcMetadataInjector The {@link MongoDbCdcConnectorMetadataInjector} used to add metadata
    *        to generated records.
-   * @param streams The configured Airbyte catalog of streams for the source.
+   * @param catalog The configured Airbyte catalog of streams for the source.
    * @param stateManager The {@link MongoDbStateManager} that provides state information used for
    *        iterator selection.
    * @param emittedAt The timestamp of the sync.
@@ -99,7 +97,7 @@ public class MongoDbCdcInitializer {
     final BsonDocument initialResumeToken =
         MongoDbResumeTokenHelper.getMostRecentResumeToken(mongoClient, databaseName, incrementalOnlyStreamsCatalog);
     final JsonNode initialDebeziumState =
-        mongoDbDebeziumStateUtil.constructInitialDebeziumState(initialResumeToken, databaseName);
+        mongoDbDebeziumStateUtil.constructInitialDebeziumState(initialResumeToken, mongoClient, databaseName);
     final MongoDbCdcState cdcState =
         (stateManager.getCdcState() == null || stateManager.getCdcState().state() == null || stateManager.getCdcState().state().isNull())
             ? new MongoDbCdcState(initialDebeziumState, isEnforceSchema)
@@ -108,7 +106,8 @@ public class MongoDbCdcInitializer {
         Jsons.clone(defaultDebeziumProperties),
         incrementalOnlyStreamsCatalog,
         cdcState.state(),
-        config.getDatabaseConfig());
+        config.getDatabaseConfig(),
+        mongoClient);
 
     // We should always be able to extract offset out of state if it's not null
     if (cdcState.state() != null && optSavedOffset.isEmpty()) {
@@ -147,18 +146,14 @@ public class MongoDbCdcInitializer {
     final InitialSnapshotHandler initialSnapshotHandler = new InitialSnapshotHandler();
     final List<AutoCloseableIterator<AirbyteMessage>> initialSnapshotIterators =
         initialSnapshotHandler.getIterators(initialSnapshotStreams, stateManager, mongoClient.getDatabase(databaseName),
-            config, true, false);
+            config);
 
     final AirbyteDebeziumHandler<BsonTimestamp> handler = new AirbyteDebeziumHandler<>(config.getDatabaseConfig(),
         new MongoDbCdcTargetPosition(initialResumeToken), false, firstRecordWaitTime, queueSize, false);
     final MongoDbCdcStateHandler mongoDbCdcStateHandler = new MongoDbCdcStateHandler(stateManager);
     final MongoDbCdcSavedInfoFetcher cdcSavedInfoFetcher = new MongoDbCdcSavedInfoFetcher(stateToBeUsed);
-    final var cdcStreamList = incrementalOnlyStreamsCatalog.getStreams().stream()
-        .filter(stream -> stream.getSyncMode() == SyncMode.INCREMENTAL)
-        .map(s -> s.getStream().getNamespace() + "\\." + s.getStream().getName())
-        .toList();
     final var propertiesManager =
-        new MongoDbDebeziumPropertiesManager(defaultDebeziumProperties, config.getDatabaseConfig(), incrementalOnlyStreamsCatalog, cdcStreamList);
+        new MongoDbDebeziumPropertiesManager(defaultDebeziumProperties, config.getDatabaseConfig(), incrementalOnlyStreamsCatalog);
     final var eventConverter =
         new MongoDbDebeziumEventConverter(cdcMetadataInjector, incrementalOnlyStreamsCatalog, emittedAt, config.getDatabaseConfig());
 
@@ -170,22 +165,7 @@ public class MongoDbCdcInitializer {
     final AutoCloseableIterator<AirbyteMessage> initialSnapshotIterator = AutoCloseableIterators.appendOnClose(
         AutoCloseableIterators.concatWithEagerClose(initialSnapshotIterators), mongoClient::close);
 
-    final List<AutoCloseableIterator<AirbyteMessage>> cdcStreamsStartStatusEmitters = incrementalOnlyStreamsCatalog.getStreams().stream()
-        .filter(stream -> !initialSnapshotStreams.contains(stream))
-        .map(stream -> (AutoCloseableIterator<AirbyteMessage>) new StreamStatusTraceEmitterIterator(new AirbyteStreamStatusHolder(
-            new io.airbyte.protocol.models.AirbyteStreamNameNamespacePair(stream.getStream().getName(), stream.getStream().getNamespace()),
-            AirbyteStreamStatusTraceMessage.AirbyteStreamStatus.STARTED)))
-        .toList();
-
-    final List<AutoCloseableIterator<AirbyteMessage>> cdcStreamsCompleteStatusEmitters = incrementalOnlyStreamsCatalog.getStreams().stream()
-        .map(stream -> (AutoCloseableIterator<AirbyteMessage>) new StreamStatusTraceEmitterIterator(new AirbyteStreamStatusHolder(
-            new io.airbyte.protocol.models.AirbyteStreamNameNamespacePair(stream.getStream().getName(), stream.getStream().getNamespace()),
-            AirbyteStreamStatusTraceMessage.AirbyteStreamStatus.COMPLETE)))
-        .toList();
-
-    return Stream.of(Collections.singletonList(initialSnapshotIterator), cdcStreamsStartStatusEmitters,
-        Collections.singletonList(AutoCloseableIterators.lazyIterator(incrementalIteratorSupplier, null)),
-        cdcStreamsCompleteStatusEmitters).flatMap(Collection::stream).toList();
+    return List.of(initialSnapshotIterator, AutoCloseableIterators.lazyIterator(incrementalIteratorSupplier, null));
   }
 
   private void logOplogInfo(final MongoClient mongoClient) {

@@ -11,10 +11,8 @@ from pipelines.airbyte_ci.connectors.publish.pipeline import reorder_contexts, r
 from pipelines.cli.click_decorators import click_ci_requirements_option
 from pipelines.cli.confirm_prompt import confirm
 from pipelines.cli.dagger_pipeline_command import DaggerPipelineCommand
-from pipelines.cli.secrets import wrap_gcp_credentials_in_secret, wrap_in_secret
 from pipelines.consts import DEFAULT_PYTHON_PACKAGE_REGISTRY_CHECK_URL, DEFAULT_PYTHON_PACKAGE_REGISTRY_URL, ContextState
 from pipelines.helpers.utils import fail_if_missing_docker_hub_creds
-from pipelines.models.secrets import Secret
 
 
 @click.command(cls=DaggerPipelineCommand, help="Publish all images for the selected connectors.")
@@ -26,7 +24,6 @@ from pipelines.models.secrets import Secret
     type=click.STRING,
     required=True,
     envvar="SPEC_CACHE_GCS_CREDENTIALS",
-    callback=wrap_gcp_credentials_in_secret,
 )
 @click.option(
     "--spec-cache-bucket-name",
@@ -41,7 +38,6 @@ from pipelines.models.secrets import Secret
     type=click.STRING,
     required=True,
     envvar="METADATA_SERVICE_GCS_CREDENTIALS",
-    callback=wrap_gcp_credentials_in_secret,
 )
 @click.option(
     "--metadata-service-bucket-name",
@@ -68,7 +64,6 @@ from pipelines.models.secrets import Secret
     help="Access token for python registry",
     type=click.STRING,
     envvar="PYTHON_REGISTRY_TOKEN",
-    callback=wrap_in_secret,
 )
 @click.option(
     "--python-registry-url",
@@ -88,17 +83,20 @@ from pipelines.models.secrets import Secret
 async def publish(
     ctx: click.Context,
     pre_release: bool,
-    spec_cache_gcs_credentials: Secret,
+    spec_cache_gcs_credentials: str,
     spec_cache_bucket_name: str,
     metadata_service_bucket_name: str,
-    metadata_service_gcs_credentials: Secret,
+    metadata_service_gcs_credentials: str,
     slack_webhook: str,
     slack_channel: str,
-    python_registry_token: Secret,
+    python_registry_token: str,
     python_registry_url: str,
     python_registry_check_url: str,
 ) -> bool:
-
+    ctx.obj["spec_cache_gcs_credentials"] = spec_cache_gcs_credentials
+    ctx.obj["spec_cache_bucket_name"] = spec_cache_bucket_name
+    ctx.obj["metadata_service_bucket_name"] = metadata_service_bucket_name
+    ctx.obj["metadata_service_gcs_credentials"] = metadata_service_gcs_credentials
     if ctx.obj["is_local"]:
         confirm(
             "Publishing from a local environment is not recommended and requires to be logged in Airbyte's DockerHub registry, do you want to continue?",
@@ -116,8 +114,8 @@ async def publish(
                 spec_cache_bucket_name=spec_cache_bucket_name,
                 metadata_service_gcs_credentials=metadata_service_gcs_credentials,
                 metadata_bucket_name=metadata_service_bucket_name,
-                docker_hub_username=Secret("docker_hub_username", ctx.obj["secret_stores"]["in_memory"]),
-                docker_hub_password=Secret("docker_hub_password", ctx.obj["secret_stores"]["in_memory"]),
+                docker_hub_username=ctx.obj["docker_hub_username"],
+                docker_hub_password=ctx.obj["docker_hub_password"],
                 slack_webhook=slack_webhook,
                 reporting_slack_channel=slack_channel,
                 ci_report_bucket=ctx.obj["ci_report_bucket_name"],
@@ -131,7 +129,7 @@ async def publish(
                 dagger_logs_url=ctx.obj.get("dagger_logs_url"),
                 pipeline_start_timestamp=ctx.obj.get("pipeline_start_timestamp"),
                 ci_context=ctx.obj.get("ci_context"),
-                ci_gcp_credentials=ctx.obj["ci_gcp_credentials"],
+                ci_gcs_credentials=ctx.obj["ci_gcs_credentials"],
                 pull_request=ctx.obj.get("pull_request"),
                 s3_build_cache_access_key_id=ctx.obj.get("s3_build_cache_access_key_id"),
                 s3_build_cache_secret_key=ctx.obj.get("s3_build_cache_secret_key"),

@@ -3,15 +3,15 @@
 #
 
 
-import logging
 import sys
 import urllib.parse as urlparse
 
 import backoff
+from airbyte_cdk.logger import AirbyteLogger
 from facebook_business.exceptions import FacebookRequestError
 from requests.status_codes import codes as status_codes
 
-logger = logging.getLogger("airbyte")
+logger = AirbyteLogger()
 
 
 class InstagramAPIException(Exception):

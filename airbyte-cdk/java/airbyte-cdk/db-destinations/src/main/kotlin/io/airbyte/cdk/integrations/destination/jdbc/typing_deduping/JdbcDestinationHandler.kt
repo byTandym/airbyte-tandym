@@ -12,11 +12,11 @@ import io.airbyte.cdk.integrations.destination.jdbc.TableDefinition
 import io.airbyte.cdk.integrations.util.ConnectorExceptionUtil.getResultsOrLogAndThrowFirst
 import io.airbyte.commons.concurrency.CompletableFutures
 import io.airbyte.commons.exceptions.SQLRuntimeException
+import io.airbyte.commons.functional.CheckedFunction
 import io.airbyte.commons.json.Jsons
 import io.airbyte.integrations.base.destination.typing_deduping.*
 import io.airbyte.integrations.base.destination.typing_deduping.Struct
 import io.airbyte.protocol.models.v0.AirbyteStreamNameNamespacePair
-import io.github.oshai.kotlinlogging.KotlinLogging
 import java.sql.*
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -24,6 +24,7 @@ import java.time.temporal.ChronoUnit
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
+import java.util.function.Predicate
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.DataType
@@ -34,8 +35,8 @@ import org.jooq.impl.DSL.field
 import org.jooq.impl.DSL.quotedName
 import org.jooq.impl.DSL.table
 import org.jooq.impl.SQLDataType
-
-private val LOGGER = KotlinLogging.logger {}
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 abstract class JdbcDestinationHandler<DestinationState>(
     // JDBC's "catalog name" refers to e.g. the Postgres/Mysql database.
@@ -83,16 +84,19 @@ abstract class JdbcDestinationHandler<DestinationState>(
     @Throws(Exception::class)
     private fun getInitialRawTableState(id: StreamId): InitialRawTableStatus {
         val tableExists =
-            jdbcDatabase.executeMetadataQuery { dbmetadata: DatabaseMetaData ->
-                LOGGER.info {
-                    "Retrieving table from Db metadata: $catalogName ${id.rawNamespace} ${id.rawName}"
-                }
+            jdbcDatabase.executeMetadataQuery { dbmetadata: DatabaseMetaData? ->
+                LOGGER.info(
+                    "Retrieving table from Db metadata: {} {} {}",
+                    catalogName,
+                    id.rawNamespace,
+                    id.rawName
+                )
                 try {
-                    getTableFromMetadata(dbmetadata, id).use { table ->
+                    getTableFromMetadata(dbmetadata!!, id).use { table ->
                         return@executeMetadataQuery table.next()
                     }
                 } catch (e: SQLException) {
-                    LOGGER.error(e) { "Failed to retrieve table info from metadata" }
+                    LOGGER.error("Failed to retrieve table info from metadata", e)
                     throw SQLRuntimeException(e)
                 }
             }
@@ -104,7 +108,7 @@ abstract class JdbcDestinationHandler<DestinationState>(
         }
         jdbcDatabase
             .unsafeQuery(
-                { conn: Connection ->
+                CheckedFunction { conn: Connection ->
                     conn.prepareStatement(
                         dslContext
                             .select(field("MIN(_airbyte_extracted_at)").`as`("min_timestamp"))
@@ -113,13 +117,15 @@ abstract class JdbcDestinationHandler<DestinationState>(
                             .sql
                     )
                 },
-                { record: ResultSet -> record.getTimestamp("min_timestamp") }
+                CheckedFunction { record: ResultSet -> record.getTimestamp("min_timestamp") }
             )
             .use { timestampStream ->
                 // Filter for nonNull values in case the query returned NULL (i.e. no unloaded
                 // records).
                 val minUnloadedTimestamp: Optional<Timestamp> =
-                    timestampStream.filter { obj: Timestamp? -> Objects.nonNull(obj) }.findFirst()
+                    timestampStream
+                        .filter(Predicate<Timestamp> { obj: Timestamp? -> Objects.nonNull(obj) })
+                        .findFirst()
                 if (minUnloadedTimestamp.isPresent) {
                     // Decrement by 1 second since timestamp precision varies between databases.
                     val ts =
@@ -131,7 +137,7 @@ abstract class JdbcDestinationHandler<DestinationState>(
             }
         jdbcDatabase
             .unsafeQuery(
-                { conn: Connection ->
+                CheckedFunction { conn: Connection ->
                     conn.prepareStatement(
                         dslContext
                             .select(field("MAX(_airbyte_extracted_at)").`as`("min_timestamp"))
@@ -139,13 +145,15 @@ abstract class JdbcDestinationHandler<DestinationState>(
                             .sql
                     )
                 },
-                { record: ResultSet -> record.getTimestamp("min_timestamp") }
+                CheckedFunction { record: ResultSet -> record.getTimestamp("min_timestamp") }
             )
             .use { timestampStream ->
                 // Filter for nonNull values in case the query returned NULL (i.e. no raw records at
                 // all).
                 val minUnloadedTimestamp: Optional<Timestamp> =
-                    timestampStream.filter { obj: Timestamp? -> Objects.nonNull(obj) }.findFirst()
+                    timestampStream
+                        .filter(Predicate<Timestamp> { obj: Timestamp? -> Objects.nonNull(obj) })
+                        .findFirst()
                 return InitialRawTableStatus(
                     true,
                     false,
@@ -160,21 +168,27 @@ abstract class JdbcDestinationHandler<DestinationState>(
         val queryId = UUID.randomUUID()
         for (transaction in transactions) {
             val transactionId = UUID.randomUUID()
-            LOGGER.info {
-                "Executing sql $queryId-$transactionId: ${transactions.joinToString("\n")}"
-            }
+            LOGGER.info(
+                "Executing sql {}-{}: {}",
+                queryId,
+                transactionId,
+                java.lang.String.join("\n", transaction)
+            )
             val startTime = System.currentTimeMillis()
 
             try {
                 jdbcDatabase.executeWithinTransaction(transaction)
             } catch (e: SQLException) {
-                LOGGER.error(e) { "Sql $queryId-$transactionId failed" }
+                LOGGER.error("Sql {}-{} failed", queryId, transactionId, e)
                 throw e
             }
 
-            LOGGER.info {
-                "Sql $queryId-$transactionId completed in ${System.currentTimeMillis() - startTime} ms"
-            }
+            LOGGER.info(
+                "Sql {}-{} completed in {} ms",
+                queryId,
+                transactionId,
+                System.currentTimeMillis() - startTime
+            )
         }
     }
 
@@ -193,10 +207,12 @@ abstract class JdbcDestinationHandler<DestinationState>(
             }
 
         val initialStates =
-            streamConfigs.map { streamConfig: StreamConfig ->
-                retrieveState(destinationStatesFuture, streamConfig)
-            }
-
+            streamConfigs
+                .stream()
+                .map { streamConfig: StreamConfig ->
+                    retrieveState(destinationStatesFuture, streamConfig)
+                }
+                .toList()
         val states = CompletableFutures.allOf(initialStates).toCompletableFuture().join()
         return getResultsOrLogAndThrowFirst("Failed to retrieve initial state", states)
     }
@@ -288,7 +304,7 @@ abstract class JdbcDestinationHandler<DestinationState>(
                     airbyteStreamNameNamespacePair to toDestinationState(stateNode)
                 }
         } catch (e: Exception) {
-            LOGGER.warn(e) { "Failed to retrieve destination states" }
+            LOGGER.warn("Failed to retrieve destination states", e)
             return emptyMap()
         }
     }
@@ -325,10 +341,6 @@ abstract class JdbcDestinationHandler<DestinationState>(
                     streamConfig,
                     finalTableDefinition.isPresent,
                     initialRawTableState,
-                    // TODO fix this
-                    // for now, no JDBC destinations actually do refreshes
-                    // so this is just to make our code compile
-                    InitialRawTableStatus(false, false, Optional.empty()),
                     isSchemaMismatch,
                     isFinalTableEmpty,
                     destinationState
@@ -387,12 +399,26 @@ abstract class JdbcDestinationHandler<DestinationState>(
             )
 
         // Filter out Meta columns since they don't exist in stream config.
-        val actualColumns = LinkedHashMap<String?, String>()
-        existingTable.columns.entries
-            .filter { column: Map.Entry<String?, ColumnDefinition> ->
-                JavaBaseConstants.V2_FINAL_TABLE_METADATA_COLUMNS.none { it == column.key }
-            }
-            .forEach { actualColumns[it.key] = it.value.type.lowercase() }
+        val actualColumns =
+            existingTable.columns.entries
+                .stream()
+                .filter { column: Map.Entry<String?, ColumnDefinition> ->
+                    JavaBaseConstants.V2_FINAL_TABLE_METADATA_COLUMNS.stream().noneMatch {
+                        airbyteColumnName: String ->
+                        airbyteColumnName == column.key
+                    }
+                }
+                .collect(
+                    { LinkedHashMap() },
+                    {
+                        map: LinkedHashMap<String?, String>,
+                        column: Map.Entry<String?, ColumnDefinition> ->
+                        map[column.key] = column.value.type.lowercase()
+                    },
+                    { obj: LinkedHashMap<String?, String>, m: LinkedHashMap<String?, String>? ->
+                        obj.putAll(m!!)
+                    }
+                )
 
         return actualColumns == intendedColumns
     }
@@ -404,6 +430,7 @@ abstract class JdbcDestinationHandler<DestinationState>(
             .deleteFrom(table(quotedName(rawTableNamespace, DESTINATION_STATE_TABLE_NAME)))
             .where(
                 destinationStates.keys
+                    .stream()
                     .map { streamId: StreamId ->
                         field(quotedName(DESTINATION_STATE_TABLE_COLUMN_NAME))
                             .eq(streamId.originalName)
@@ -412,7 +439,9 @@ abstract class JdbcDestinationHandler<DestinationState>(
                                     .eq(streamId.originalNamespace)
                             )
                     }
-                    .reduce { obj: Condition, arg2: Condition? -> obj.or(arg2) }
+                    .reduce(DSL.falseCondition()) { obj: Condition, arg2: Condition? ->
+                        obj.or(arg2)
+                    }
             )
             .getSQL(ParamType.INLINED)
     }
@@ -462,7 +491,7 @@ abstract class JdbcDestinationHandler<DestinationState>(
 
             executeWithinTransaction(listOf(deleteStates, insertStates))
         } catch (e: Exception) {
-            LOGGER.warn(e) { "Failed to commit destination states" }
+            LOGGER.warn("Failed to commit destination states", e)
         }
     }
 
@@ -482,10 +511,10 @@ abstract class JdbcDestinationHandler<DestinationState>(
     protected abstract fun toDestinationState(json: JsonNode): DestinationState
 
     companion object {
-
-        private const val DESTINATION_STATE_TABLE_NAME = "_airbyte_destination_state"
-        private const val DESTINATION_STATE_TABLE_COLUMN_NAME = "name"
-        private const val DESTINATION_STATE_TABLE_COLUMN_NAMESPACE = "namespace"
+        private val LOGGER: Logger = LoggerFactory.getLogger(JdbcDestinationHandler::class.java)
+        protected const val DESTINATION_STATE_TABLE_NAME = "_airbyte_destination_state"
+        protected const val DESTINATION_STATE_TABLE_COLUMN_NAME = "name"
+        protected const val DESTINATION_STATE_TABLE_COLUMN_NAMESPACE = "namespace"
         private const val DESTINATION_STATE_TABLE_COLUMN_STATE = "destination_state"
         private const val DESTINATION_STATE_TABLE_COLUMN_UPDATED_AT = "updated_at"
 
@@ -497,17 +526,20 @@ abstract class JdbcDestinationHandler<DestinationState>(
             tableName: String?
         ): Optional<TableDefinition> {
             val retrievedColumnDefns =
-                jdbcDatabase.executeMetadataQuery { dbMetadata: DatabaseMetaData ->
+                jdbcDatabase.executeMetadataQuery { dbMetadata: DatabaseMetaData? ->
 
                     // TODO: normalize namespace and finalName strings to quoted-lowercase (as
                     // needed. Snowflake
                     // requires uppercase)
-                    val columnDefinitions = LinkedHashMap<String, ColumnDefinition>()
-                    LOGGER.info {
-                        "Retrieving existing columns for $catalogName.$schemaName.$tableName"
-                    }
+                    val columnDefinitions = LinkedHashMap<String?, ColumnDefinition>()
+                    LOGGER.info(
+                        "Retrieving existing columns for {}.{}.{}",
+                        catalogName,
+                        schemaName,
+                        tableName
+                    )
                     try {
-                        dbMetadata.getColumns(catalogName, schemaName, tableName, null).use {
+                        dbMetadata!!.getColumns(catalogName, schemaName, tableName, null).use {
                             columns ->
                             while (columns.next()) {
                                 val columnName = columns.getString("COLUMN_NAME")
@@ -524,9 +556,13 @@ abstract class JdbcDestinationHandler<DestinationState>(
                             }
                         }
                     } catch (e: SQLException) {
-                        LOGGER.error(e) {
-                            "Failed to retrieve column info for $catalogName.$schemaName.$tableName"
-                        }
+                        LOGGER.error(
+                            "Failed to retrieve column info for {}.{}.{}",
+                            catalogName,
+                            schemaName,
+                            tableName,
+                            e
+                        )
                         throw SQLRuntimeException(e)
                     }
                     columnDefinitions

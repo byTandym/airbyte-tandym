@@ -27,29 +27,19 @@ from source_firebolt.utils import airbyte_message_from_data, format_fetch_result
 def config(request):
     args = {
         "database": "my_database",
-        "client_id": "my_id",
-        "client_secret": "my_secret",
+        "username": "my_username",
+        "password": "my_password",
         "engine": request.param,
     }
     return args
 
-@fixture()
-def legacy_config(request):
-    args = {
-        "database": "my_database",
-        # @ is important here to determine the auth type
-        "username": "my@username",
-        "password": "my_password",
-        "engine": "my_engine",
-    }
-    return args
 
 @fixture()
 def config_no_engine():
     args = {
         "database": "my_database",
-        "client_id": "my_id",
-        "client_secret": "my_secret",
+        "username": "my_username",
+        "password": "my_password",
     }
     return args
 
@@ -103,17 +93,12 @@ def test_parse_config(config, logger):
     result = parse_config(config, logger)
     assert result["database"] == "my_database"
     assert result["engine_name"] == "override_engine"
-    assert result["auth"].client_id == "my_id"
-    assert result["auth"].client_secret == "my_secret"
+    assert result["auth"].username == "my_username"
+    assert result["auth"].password == "my_password"
     config["engine"] = "override_engine.api.firebolt.io"
     result = parse_config(config, logger)
     assert result["engine_url"] == "override_engine.api.firebolt.io"
 
-def test_parse_legacy_config(legacy_config, logger):
-    result = parse_config(legacy_config, logger)
-    assert result["database"] == "my_database"
-    assert result["auth"].username == "my@username"
-    assert result["auth"].password == "my_password"
 
 @patch("source_firebolt.database.connect")
 def test_connection(mock_connection, config, config_no_engine, logger):

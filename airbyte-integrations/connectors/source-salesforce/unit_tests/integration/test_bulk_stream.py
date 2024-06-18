@@ -243,7 +243,8 @@ class BulkStreamTest(TestCase):
             HttpRequest(f"{_BASE_URL}/jobs/query/{_JOB_ID}/results"),
             HttpResponse(f"{_A_FIELD_NAME}\nfield_value"),
         )
-        self._http_mocker.delete(
+        self._http_mocker._mock_request_method(  # FIXME to add DELETE method in airbyte_cdk tests
+            "delete",
             HttpRequest(f"{_BASE_URL}/jobs/query/{_JOB_ID}"),
             [
                 _RETRYABLE_RESPONSE,
@@ -273,7 +274,8 @@ class BulkStreamTest(TestCase):
             HttpRequest(f"{_BASE_URL}/jobs/query/{_JOB_ID}/results"),
             HttpResponse(f"{_A_FIELD_NAME}\nfield_value"),
         )
-        self._http_mocker.delete(
+        self._http_mocker._mock_request_method(  # FIXME to add DELETE method in airbyte_cdk tests
+            "delete",
             HttpRequest(f"{_BASE_URL}/jobs/query/{_JOB_ID}"),
             HttpResponse("", 429),
         )
@@ -329,7 +331,8 @@ class BulkStreamTest(TestCase):
         self._mock_delete_job(job_id)
 
     def _mock_delete_job(self, job_id: str) -> None:
-        self._http_mocker.delete(
+        self._http_mocker._mock_request_method(  # FIXME to add DELETE method in airbyte_cdk tests
+            "delete",
             HttpRequest(f"{_BASE_URL}/jobs/query/{job_id}"),
             HttpResponse(""),
         )

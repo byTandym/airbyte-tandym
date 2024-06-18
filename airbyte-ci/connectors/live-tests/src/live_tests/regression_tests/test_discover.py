@@ -8,7 +8,8 @@ import pytest
 from _pytest.fixtures import SubRequest
 from airbyte_protocol.models import AirbyteCatalog, AirbyteStream, Type  # type: ignore
 from live_tests.commons.models import ExecutionResult
-from live_tests.utils import fail_test_on_failing_execution_results, get_and_write_diff, get_catalog
+
+from .utils import fail_test_on_failing_execution_results, get_and_write_diff
 
 pytestmark = [
     pytest.mark.anyio,
@@ -32,6 +33,12 @@ async def test_catalog_are_the_same(
             discover_target_execution_result,
         ],
     )
+
+    def get_catalog(execution_result: ExecutionResult) -> AirbyteCatalog:
+        for message in execution_result.airbyte_messages:
+            if message.type is Type.CATALOG and message.catalog:
+                return message.catalog
+        return None
 
     control_catalog = get_catalog(discover_control_execution_result)
     target_catalog = get_catalog(discover_target_execution_result)

@@ -62,12 +62,7 @@ Please refer to the [getting started with the API](https://docs.talkdesk.com/doc
 
 ## Changelog
 
-<details>
-  <summary>Expand to review</summary>
-
 | Version | Date       | Pull Request | Subject                      |
 | ------- | ---------- | ------------ | ---------------------------- |
 | 0.1.0   | 2022-02-07 |              | New Source: Talkdesk Explore |
 | :---    | :---       | :---         | :---                         |
-
-</details>

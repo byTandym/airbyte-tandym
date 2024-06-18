@@ -385,8 +385,7 @@ public class MssqlJdbcSourceAcceptanceTest extends JdbcSourceAcceptanceTest<Mssq
             Field.of(COL_NAME, JsonSchemaType.STRING),
             Field.of(COL_UPDATED_AT, JsonSchemaType.STRING_DATE))
             .withSupportedSyncModes(List.of(SyncMode.FULL_REFRESH, SyncMode.INCREMENTAL))
-            .withSourceDefinedPrimaryKey(List.of(List.of(COL_ID)))
-            .withIsResumable(true),
+            .withSourceDefinedPrimaryKey(List.of(List.of(COL_ID))),
         CatalogHelpers.createAirbyteStream(
             TABLE_NAME_WITHOUT_PK,
             defaultNamespace,
@@ -394,8 +393,7 @@ public class MssqlJdbcSourceAcceptanceTest extends JdbcSourceAcceptanceTest<Mssq
             Field.of(COL_NAME, JsonSchemaType.STRING),
             Field.of(COL_UPDATED_AT, JsonSchemaType.STRING_DATE))
             .withSupportedSyncModes(List.of(SyncMode.FULL_REFRESH, SyncMode.INCREMENTAL))
-            .withSourceDefinedPrimaryKey(Collections.emptyList())
-            .withIsResumable(false),
+            .withSourceDefinedPrimaryKey(Collections.emptyList()),
         CatalogHelpers.createAirbyteStream(
             TABLE_NAME_COMPOSITE_PK,
             defaultNamespace,
@@ -404,8 +402,7 @@ public class MssqlJdbcSourceAcceptanceTest extends JdbcSourceAcceptanceTest<Mssq
             Field.of(COL_UPDATED_AT, JsonSchemaType.STRING_DATE))
             .withSupportedSyncModes(List.of(SyncMode.FULL_REFRESH, SyncMode.INCREMENTAL))
             .withSourceDefinedPrimaryKey(
-                List.of(List.of(COL_FIRST_NAME), List.of(COL_LAST_NAME)))
-            .withIsResumable(true)));
+                List.of(List.of(COL_FIRST_NAME), List.of(COL_LAST_NAME)))));
   }
 
   @Override

@@ -59,7 +59,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
 @Order(2)
-@edu.umd.cs.findbugs.annotations.SuppressWarnings(value = "NP_NULL_ON_SOME_PATH")
 class MySqlJdbcSourceAcceptanceTest extends JdbcSourceAcceptanceTest<MySqlSource, MySQLTestDatabase> {
 
   protected static final String USERNAME_WITHOUT_PERMISSION = "new_user";
@@ -473,8 +472,7 @@ class MySqlJdbcSourceAcceptanceTest extends JdbcSourceAcceptanceTest<MySqlSource
             Field.of(COL_NAME, JsonSchemaType.STRING),
             Field.of(COL_UPDATED_AT, JsonSchemaType.STRING_DATE))
             .withSupportedSyncModes(Lists.newArrayList(SyncMode.FULL_REFRESH, SyncMode.INCREMENTAL))
-            .withSourceDefinedPrimaryKey(List.of(List.of(COL_ID)))
-            .withIsResumable(true),
+            .withSourceDefinedPrimaryKey(List.of(List.of(COL_ID))),
         CatalogHelpers.createAirbyteStream(
             TABLE_NAME_WITHOUT_PK,
             defaultNamespace,
@@ -482,8 +480,7 @@ class MySqlJdbcSourceAcceptanceTest extends JdbcSourceAcceptanceTest<MySqlSource
             Field.of(COL_NAME, JsonSchemaType.STRING),
             Field.of(COL_UPDATED_AT, JsonSchemaType.STRING_DATE))
             .withSupportedSyncModes(Lists.newArrayList(SyncMode.FULL_REFRESH, SyncMode.INCREMENTAL))
-            .withSourceDefinedPrimaryKey(Collections.emptyList())
-            .withIsResumable(false),
+            .withSourceDefinedPrimaryKey(Collections.emptyList()),
         CatalogHelpers.createAirbyteStream(
             TABLE_NAME_COMPOSITE_PK,
             defaultNamespace,
@@ -492,8 +489,7 @@ class MySqlJdbcSourceAcceptanceTest extends JdbcSourceAcceptanceTest<MySqlSource
             Field.of(COL_UPDATED_AT, JsonSchemaType.STRING_DATE))
             .withSupportedSyncModes(Lists.newArrayList(SyncMode.FULL_REFRESH, SyncMode.INCREMENTAL))
             .withSourceDefinedPrimaryKey(
-                List.of(List.of(COL_FIRST_NAME), List.of(COL_LAST_NAME)))
-            .withIsResumable(true)));
+                List.of(List.of(COL_FIRST_NAME), List.of(COL_LAST_NAME)))));
   }
 
   // Override from parent class as we're no longer including the legacy Data field.

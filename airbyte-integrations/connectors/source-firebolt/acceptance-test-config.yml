@@ -1,7 +1,6 @@
 # See [Connector Acceptance Tests](https://docs.airbyte.com/connector-development/testing-connectors/connector-acceptance-tests-reference)
 # for more information about how to configure these tests
 connector_image: airbyte/source-firebolt:dev
-test_strictness_level: low
 acceptance_tests:
   spec:
     tests:
@@ -25,7 +24,9 @@ acceptance_tests:
         empty_streams: []
         timeout_seconds: 120
         expect_trace_message_on_failure: false
-        validate_state_messages: false
+        expect_records:
+          path: "integration_tests/expected_records.jsonl"
+          exact_order: yes
   full_refresh:
     tests:
       - config_path: "secrets/config.json"

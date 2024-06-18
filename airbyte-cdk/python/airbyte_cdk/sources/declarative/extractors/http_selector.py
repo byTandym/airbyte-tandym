@@ -4,10 +4,10 @@
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Any, Iterable, Mapping, Optional
+from typing import Any, List, Mapping, Optional
 
 import requests
-from airbyte_cdk.sources.types import Record, StreamSlice, StreamState
+from airbyte_cdk.sources.declarative.types import Record, StreamSlice, StreamState
 
 
 @dataclass
@@ -25,7 +25,7 @@ class HttpSelector:
         records_schema: Mapping[str, Any],
         stream_slice: Optional[StreamSlice] = None,
         next_page_token: Optional[Mapping[str, Any]] = None,
-    ) -> Iterable[Record]:
+    ) -> List[Record]:
         """
         Selects records from the response
         :param response: The response to select the records from

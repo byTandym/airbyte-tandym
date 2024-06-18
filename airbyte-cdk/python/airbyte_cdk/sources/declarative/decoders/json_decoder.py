@@ -17,7 +17,7 @@ class JsonDecoder(Decoder):
 
     parameters: InitVar[Mapping[str, Any]]
 
-    def decode(self, response: requests.Response) -> Union[Mapping[str, Any], List[Any], Any]:
+    def decode(self, response: requests.Response) -> Union[Mapping[str, Any], List]:
         try:
             return response.json()
         except requests.exceptions.JSONDecodeError:

@@ -158,7 +158,6 @@
       "properties": {
         "sourceApplication": {
           "description": "Application details of the workflow update source",
-          "type": ["null", "object"],
           "properties": {
             "serviceName": {
               "description": "Name of the service",
@@ -176,7 +175,6 @@
         },
         "updatedByUser": {
           "description": "Details of the user who updated the workflow",
-          "type": ["null", "object"],
           "properties": {
             "userEmail": {
               "description": "Email address of the user",
@@ -204,7 +202,6 @@
         },
         "createdByUser": {
           "description": "Details of the user who created the workflow",
-          "type": ["null", "object"],
           "properties": {
             "userEmail": {
               "description": "Email address of the user",
@@ -218,7 +215,6 @@
         },
         "sourceApplication": {
           "description": "Application details of the workflow source",
-          "type": ["null", "object"],
           "properties": {
             "serviceName": {
               "description": "Name of the service",

@@ -53,16 +53,14 @@ class PostgresSourceSSLTest {
           Field.of("name", JsonSchemaType.STRING),
           Field.of("power", JsonSchemaType.NUMBER))
           .withSupportedSyncModes(Lists.newArrayList(SyncMode.FULL_REFRESH, SyncMode.INCREMENTAL))
-          .withSourceDefinedPrimaryKey(List.of(List.of("id")))
-          .withIsResumable(true),
+          .withSourceDefinedPrimaryKey(List.of(List.of("id"))),
       CatalogHelpers.createAirbyteStream(
           STREAM_NAME + "2",
           SCHEMA_NAME,
           Field.of("id", JsonSchemaType.NUMBER),
           Field.of("name", JsonSchemaType.STRING),
           Field.of("power", JsonSchemaType.NUMBER))
-          .withSupportedSyncModes(Lists.newArrayList(SyncMode.FULL_REFRESH, SyncMode.INCREMENTAL))
-          .withIsResumable(true),
+          .withSupportedSyncModes(Lists.newArrayList(SyncMode.FULL_REFRESH, SyncMode.INCREMENTAL)),
       CatalogHelpers.createAirbyteStream(
           "names",
           SCHEMA_NAME,
@@ -70,8 +68,7 @@ class PostgresSourceSSLTest {
           Field.of("last_name", JsonSchemaType.STRING),
           Field.of("power", JsonSchemaType.NUMBER))
           .withSupportedSyncModes(Lists.newArrayList(SyncMode.FULL_REFRESH, SyncMode.INCREMENTAL))
-          .withSourceDefinedPrimaryKey(List.of(List.of("first_name"), List.of("last_name")))
-          .withIsResumable(true)));
+          .withSourceDefinedPrimaryKey(List.of(List.of("first_name"), List.of("last_name")))));
   private static final ConfiguredAirbyteCatalog CONFIGURED_CATALOG = CatalogHelpers.toDefaultConfiguredCatalog(CATALOG);
   private static final Set<AirbyteMessage> ASCII_MESSAGES = Sets.newHashSet(
       createRecord(STREAM_NAME, map("id", new BigDecimal("1.0"), "name", "goku", "power", null), SCHEMA_NAME),

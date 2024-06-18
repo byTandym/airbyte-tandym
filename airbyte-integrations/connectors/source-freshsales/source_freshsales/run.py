@@ -1,13 +1,12 @@
 #
-# Copyright (c) 2024 Airbyte, Inc., all rights reserved.
+# Copyright (c) 2023 Airbyte, Inc., all rights reserved.
 #
 
 
 import sys
 
 from airbyte_cdk.entrypoint import launch
-
-from .source import SourceFreshsales
+from source_freshsales import SourceFreshsales
 
 
 def run():

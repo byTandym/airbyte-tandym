@@ -31,7 +31,4 @@ data:
   tags:
     - language:python
     - cdk:low-code
-  connectorTestSuitesOptions:
-    - suite: unitTests
-    - suite: integrationTests
 metadataSpecVersion: "1.0"

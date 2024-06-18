@@ -21,6 +21,7 @@ import io.airbyte.integrations.base.destination.typing_deduping.Struct;
 import io.airbyte.integrations.base.destination.typing_deduping.Union;
 import io.airbyte.integrations.base.destination.typing_deduping.UnsupportedOneOf;
 import io.airbyte.protocol.models.v0.DestinationSyncMode;
+import io.airbyte.protocol.models.v0.SyncMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -56,10 +57,11 @@ public class BigqueryDestinationHandlerTest {
   @Test
   public void testClusteringMatches() {
     StreamConfig stream = new StreamConfig(mock(),
+        SyncMode.INCREMENTAL,
         DestinationSyncMode.APPEND_DEDUP,
         List.of(new ColumnId("foo", "bar", "fizz")),
         Optional.empty(),
-        new LinkedHashMap<>(), 0, 0, 0);
+        new LinkedHashMap<>());
 
     // Clustering is null
     final StandardTableDefinition existingTable = mock(StandardTableDefinition.class);
@@ -73,10 +75,11 @@ public class BigqueryDestinationHandlerTest {
 
     // Clustering matches
     stream = new StreamConfig(mock(),
+        SyncMode.FULL_REFRESH,
         DestinationSyncMode.OVERWRITE,
         Collections.emptyList(),
         Optional.empty(),
-        new LinkedHashMap<>(), 0, 0, 0);
+        new LinkedHashMap<>());
     Assertions.assertTrue(BigQueryDestinationHandler.clusteringMatches(stream, existingTable));
 
     // Clustering only the first 3 PK columns (See https://github.com/airbytehq/oncall/issues/2565)
@@ -87,12 +90,13 @@ public class BigqueryDestinationHandlerTest {
                 .collect(Collectors.toList()))
             .build());
     stream = new StreamConfig(mock(),
+        SyncMode.INCREMENTAL,
         DestinationSyncMode.APPEND_DEDUP,
         Stream.concat(expectedStreamColumnNames.stream(), Stream.of("d", "e"))
             .map(name -> new ColumnId(name, "foo", "bar"))
             .collect(Collectors.toList()),
         Optional.empty(),
-        new LinkedHashMap<>(), 0, 0, 0);
+        new LinkedHashMap<>());
     Assertions.assertTrue(BigQueryDestinationHandler.clusteringMatches(stream, existingTable));
   }
 
@@ -120,15 +124,13 @@ public class BigqueryDestinationHandlerTest {
   @Test
   public void testSchemaContainAllFinalTableV2AirbyteColumns() {
     Assertions.assertTrue(
-        BigQueryDestinationHandler.schemaContainAllFinalTableV2AirbyteColumns(
-            Set.of("_airbyte_meta", "_airbyte_generation_id", "_airbyte_extracted_at", "_airbyte_raw_id")));
+        BigQueryDestinationHandler.schemaContainAllFinalTableV2AirbyteColumns(Set.of("_airbyte_meta", "_airbyte_extracted_at", "_airbyte_raw_id")));
     Assertions.assertFalse(BigQueryDestinationHandler.schemaContainAllFinalTableV2AirbyteColumns(Set.of("_airbyte_extracted_at", "_airbyte_raw_id")));
     Assertions.assertFalse(BigQueryDestinationHandler.schemaContainAllFinalTableV2AirbyteColumns(Set.of("_airbyte_meta", "_airbyte_raw_id")));
     Assertions.assertFalse(BigQueryDestinationHandler.schemaContainAllFinalTableV2AirbyteColumns(Set.of("_airbyte_meta", "_airbyte_extracted_at")));
     Assertions.assertFalse(BigQueryDestinationHandler.schemaContainAllFinalTableV2AirbyteColumns(Set.of()));
     Assertions.assertTrue(
-        BigQueryDestinationHandler.schemaContainAllFinalTableV2AirbyteColumns(
-            Set.of("_AIRBYTE_META", "_AIRBYTE_GENERATION_ID", "_AIRBYTE_EXTRACTED_AT", "_AIRBYTE_RAW_ID")));
+        BigQueryDestinationHandler.schemaContainAllFinalTableV2AirbyteColumns(Set.of("_AIRBYTE_META", "_AIRBYTE_EXTRACTED_AT", "_AIRBYTE_RAW_ID")));
   }
 
 }

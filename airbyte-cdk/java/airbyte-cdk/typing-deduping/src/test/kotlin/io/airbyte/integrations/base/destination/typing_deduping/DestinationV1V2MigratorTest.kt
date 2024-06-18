@@ -77,7 +77,7 @@ class DestinationV1V2MigratorTest {
         migrator: BaseDestinationV1V2Migrator<*>,
         expected: Boolean
     ) {
-        val config = StreamConfig(STREAM_ID, destinationSyncMode, mock(), mock(), mock(), 0, 0, 0)
+        val config = StreamConfig(STREAM_ID, mock(), destinationSyncMode, mock(), mock(), mock())
         val actual = migrator.shouldMigrate(config)
         Assertions.assertEquals(expected, actual)
     }
@@ -88,13 +88,11 @@ class DestinationV1V2MigratorTest {
         val config =
             StreamConfig(
                 STREAM_ID,
+                mock(),
                 DestinationSyncMode.APPEND_DEDUP,
                 mock(),
                 mock(),
-                mock(),
-                0,
-                0,
-                0,
+                mock()
             )
         val migrator = makeMockMigrator(true, true, false, false, false)
         val exception =
@@ -114,13 +112,11 @@ class DestinationV1V2MigratorTest {
         val stream =
             StreamConfig(
                 STREAM_ID,
+                mock(),
                 DestinationSyncMode.APPEND_DEDUP,
                 mock(),
                 mock(),
-                mock(),
-                0,
-                0,
-                0,
+                mock()
             )
         val handler = Mockito.mock(DestinationHandler::class.java)
         val sql = sqlGenerator.migrateFromV1toV2(STREAM_ID, "v1_raw_namespace", "v1_raw_table")

@@ -79,7 +79,7 @@
           }
         },
         "description": "Add page access groups to a component",
-        "$schema": "https://json-schema.org/schema#"
+        "$schema": "http://json-schema.org/schema#"
       },
       "description": "Incident components"
     },
@@ -172,7 +172,7 @@
           }
         },
         "description": "Update a previous incident update",
-        "$schema": "https://json-schema.org/schema#"
+        "$schema": "http://json-schema.org/schema#"
       },
       "description": "The incident updates for incident."
     },
@@ -277,7 +277,7 @@
     },
     "shortlink": {
       "type": ["null", "string"],
-      "example": "https://stspg.io/803310a12",
+      "example": "http://stspg.io/803310a12",
       "description": "Incident Shortlink."
     },
     "status": {
@@ -302,5 +302,5 @@
     }
   },
   "description": "Get an incident",
-  "$schema": "https://json-schema.org/schema#"
+  "$schema": "http://json-schema.org/schema#"
 }

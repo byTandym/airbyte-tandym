@@ -7,7 +7,6 @@ from typing import Optional
 import dagger
 from pipelines.consts import GCS_PUBLIC_DOMAIN
 from pipelines.dagger.actions import remote_storage
-from pipelines.models.secrets import Secret
 
 
 @dataclass(kw_only=True)
@@ -29,7 +28,7 @@ class Artifact:
         else:
             raise Exception(f"Failed to save artifact {self.name} to local path {path}")
 
-    async def upload_to_gcs(self, dagger_client: dagger.Client, bucket: str, key: str, gcs_credentials: Secret) -> str:
+    async def upload_to_gcs(self, dagger_client: dagger.Client, bucket: str, key: str, gcs_credentials: dagger.Secret) -> str:
         gcs_cp_flags = [f'--content-disposition=filename="{self.name}"']
         if self.content_type is not None:
             gcs_cp_flags = gcs_cp_flags + [f"--content-type={self.content_type}"]

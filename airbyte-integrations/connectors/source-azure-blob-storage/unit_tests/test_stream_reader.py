@@ -1,6 +1,4 @@
 # Copyright (c) 2024 Airbyte, Inc., all rights reserved.
-
-
 import datetime
 import logging
 from typing import Dict, Union

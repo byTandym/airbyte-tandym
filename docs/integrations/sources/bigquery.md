@@ -82,10 +82,9 @@ You should now have all the requirements needed to configure BigQuery as a sourc
 
 Once you've configured BigQuery as a source, delete the Service Account Key from your computer.
 
-## Changelog
+## CHANGELOG
 
-<details>
-  <summary>Expand to review</summary>
+### source-bigquery
 
 | Version | Date       | Pull Request                                             | Subject                                                                                                                                   |
 | :------ | :--------- | :------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------- |
@@ -107,5 +106,3 @@ Once you've configured BigQuery as a source, delete the Service Account Key from
 | 0.1.2   | 2021-09-16 | [\#6135](https://github.com/airbytehq/airbyte/pull/6135) | 🐛 BigQuery source: Fix nested structs                                                                                                    |
 | 0.1.1   | 2021-07-28 | [\#4981](https://github.com/airbytehq/airbyte/pull/4981) | 🐛 BigQuery source: Fix nested arrays                                                                                                     |
 | 0.1.0   | 2021-07-22 | [\#4457](https://github.com/airbytehq/airbyte/pull/4457) | 🎉 New Source: Big Query.                                                                                                                 |
-
-</details>

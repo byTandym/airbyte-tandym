@@ -29,13 +29,14 @@ import io.airbyte.integrations.base.destination.typing_deduping.StreamConfig
 import io.airbyte.integrations.base.destination.typing_deduping.StreamId.Companion.concatenateRawTableName
 import io.airbyte.integrations.base.destination.typing_deduping.TyperDeduper
 import io.airbyte.protocol.models.v0.*
-import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.function.Consumer
 import java.util.function.Function
+import java.util.stream.Collectors
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
-private val LOGGER = KotlinLogging.logger {}
 /**
  * Strategy:
  *
@@ -51,6 +52,7 @@ private val LOGGER = KotlinLogging.logger {}
  * to the database (regardless of how few are left)
  */
 object JdbcBufferedConsumerFactory {
+    private val LOGGER: Logger = LoggerFactory.getLogger(JdbcBufferedConsumerFactory::class.java)
 
     const val DEFAULT_OPTIMAL_BATCH_SIZE_FOR_FLUSH = 25 * 1024 * 1024L
 
@@ -62,7 +64,7 @@ object JdbcBufferedConsumerFactory {
         namingResolver: NamingConventionTransformer,
         config: JsonNode,
         catalog: ConfiguredAirbyteCatalog,
-        defaultNamespace: String,
+        defaultNamespace: String?,
         typerDeduper: TyperDeduper,
         dataTransformer: StreamAwareDataTransformer = IdentityDataTransformer(),
         optimalBatchSizeBytes: Long = DEFAULT_OPTIMAL_BATCH_SIZE_FOR_FLUSH,
@@ -85,7 +87,8 @@ object JdbcBufferedConsumerFactory {
                 optimalBatchSizeBytes
             ),
             catalog,
-            BufferManager(defaultNamespace, (Runtime.getRuntime().maxMemory() * 0.2).toLong()),
+            BufferManager((Runtime.getRuntime().maxMemory() * 0.2).toLong()),
+            Optional.ofNullable(defaultNamespace),
             FlushFailure(),
             Executors.newFixedThreadPool(2),
             AirbyteMessageDeserializer(dataTransformer)
@@ -108,12 +111,15 @@ object JdbcBufferedConsumerFactory {
         return if (parsedCatalog == null) {
             catalog!!
                 .streams
-                .map { toWriteConfig(namingResolver, config, schemaRequired).apply(it) }
-                .toList()
+                .stream()
+                .map(toWriteConfig(namingResolver, config, schemaRequired))
+                .collect(Collectors.toList())
         } else {
+            // we should switch this to kotlin-style list processing, but meh for now
             parsedCatalog.streams
-                .map { parsedStreamToWriteConfig(namingResolver).apply(it) }
-                .toList()
+                .stream()
+                .map(parsedStreamToWriteConfig(namingResolver))
+                .collect(Collectors.toList())
         }
     }
 
@@ -158,7 +164,7 @@ object JdbcBufferedConsumerFactory {
                     tableName,
                     syncMode
                 )
-            LOGGER.info { "Write config: $writeConfig" }
+            LOGGER.info("Write config: {}", writeConfig)
             writeConfig
         }
     }
@@ -229,16 +235,20 @@ object JdbcBufferedConsumerFactory {
     ): OnStartFunction {
         return OnStartFunction {
             typerDeduper.prepareSchemasAndRunMigrations()
-            LOGGER.info {
-                "Preparing raw tables in destination started for ${writeConfigs.size} streams"
-            }
+            LOGGER.info(
+                "Preparing raw tables in destination started for {} streams",
+                writeConfigs.size
+            )
             val queryList: MutableList<String> = ArrayList()
             for (writeConfig in writeConfigs) {
                 val schemaName = writeConfig.outputSchemaName
                 val dstTableName = writeConfig.outputTableName
-                LOGGER.info {
-                    "Preparing raw table in destination started for stream ${writeConfig.streamName}. schema: $schemaName, table name: $dstTableName"
-                }
+                LOGGER.info(
+                    "Preparing raw table in destination started for stream {}. schema: {}, table name: {}",
+                    writeConfig.streamName,
+                    schemaName,
+                    dstTableName
+                )
                 sqlOperations.createSchemaIfNotExists(database, schemaName)
                 sqlOperations.createTableIfNotExists(database, schemaName, dstTableName)
                 when (writeConfig.syncMode) {
@@ -255,7 +265,7 @@ object JdbcBufferedConsumerFactory {
                 }
             }
             sqlOperations.executeTransaction(database, queryList)
-            LOGGER.info { "Preparing raw tables in destination completed." }
+            LOGGER.info("Preparing raw tables in destination completed.")
             typerDeduper.prepareFinalTables()
         }
     }

@@ -86,7 +86,6 @@ spec:
     required:
       - endpoint
       - iban
-      - api_key
     additionalProperties: true
     properties:
       api_key:
@@ -97,7 +96,6 @@ spec:
         pattern_descriptor: organization_slug:secret_key
         examples:
           - "my-organization:3564f"
-        airbyte_secret: true
         order: 1
       endpoint:
         title: Endpoint
