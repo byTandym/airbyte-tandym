@@ -119,7 +119,7 @@ public abstract class YellowbrickDestinationAcceptanceTest extends JdbcDestinati
       throws Exception {
     final StreamId streamId = new YellowbrickSqlGenerator(new YellowbrickSQLNameTransformer()).buildStreamId(namespace, streamName,
         JavaBaseConstants.DEFAULT_AIRBYTE_INTERNAL_NAMESPACE);
-    return retrieveRecordsFromTable(streamId.getRawName(), streamId.getRawNamespace())
+    return retrieveRecordsFromTable(streamId.rawName(), streamId.rawNamespace())
         .stream()
         .map(r -> r.get(JavaBaseConstants.COLUMN_NAME_DATA))
         .collect(Collectors.toList());

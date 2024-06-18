@@ -255,7 +255,6 @@ single_avro_scenario = (
                     "name": "stream1",
                     "source_defined_cursor": True,
                     "supported_sync_modes": ["full_refresh", "incremental"],
-                    "is_resumable": True,
                 }
             ]
         }
@@ -355,7 +354,6 @@ multiple_avro_combine_schema_scenario = (
                     "name": "stream1",
                     "source_defined_cursor": True,
                     "supported_sync_modes": ["full_refresh", "incremental"],
-                    "is_resumable": True,
                 }
             ]
         }
@@ -464,7 +462,6 @@ avro_all_types_scenario = (
                     "name": "stream1",
                     "source_defined_cursor": True,
                     "supported_sync_modes": ["full_refresh", "incremental"],
-                    "is_resumable": True,
                 }
             ]
         }
@@ -618,7 +615,6 @@ multiple_streams_avro_scenario = (
                     "name": "songs_stream",
                     "source_defined_cursor": True,
                     "supported_sync_modes": ["full_refresh", "incremental"],
-                    "is_resumable": True,
                 },
                 {
                     "default_cursor_field": ["_ab_source_file_last_modified"],
@@ -642,7 +638,6 @@ multiple_streams_avro_scenario = (
                     "name": "festivals_stream",
                     "source_defined_cursor": True,
                     "supported_sync_modes": ["full_refresh", "incremental"],
-                    "is_resumable": True,
                 },
             ]
         }
@@ -742,7 +737,6 @@ avro_file_with_double_as_number_scenario = (
                     "name": "stream1",
                     "source_defined_cursor": True,
                     "supported_sync_modes": ["full_refresh", "incremental"],
-                    "is_resumable": True,
                 }
             ]
         }

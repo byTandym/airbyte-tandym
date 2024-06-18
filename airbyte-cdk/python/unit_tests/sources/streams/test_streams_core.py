@@ -193,8 +193,8 @@ def test_as_airbyte_stream_full_refresh(mocker):
     mocker.patch.object(StreamStubFullRefresh, "get_json_schema", return_value={})
     airbyte_stream = test_stream.as_airbyte_stream()
 
-    exp = AirbyteStream(name="stream_stub_full_refresh", json_schema={}, supported_sync_modes=[SyncMode.full_refresh], is_resumable=False)
-    assert airbyte_stream == exp
+    exp = AirbyteStream(name="stream_stub_full_refresh", json_schema={}, supported_sync_modes=[SyncMode.full_refresh])
+    assert exp == airbyte_stream
 
 
 def test_as_airbyte_stream_incremental(mocker):
@@ -215,9 +215,8 @@ def test_as_airbyte_stream_incremental(mocker):
         default_cursor_field=["test_cursor"],
         source_defined_cursor=True,
         source_defined_primary_key=[["primary_key"]],
-        is_resumable=True,
     )
-    assert airbyte_stream == exp
+    assert exp == airbyte_stream
 
 
 def test_supports_incremental_cursor_set():
@@ -267,9 +266,8 @@ def test_namespace_set_to_empty_string(mocker):
         source_defined_cursor=True,
         source_defined_primary_key=[["primary_key"]],
         namespace=None,
-        is_resumable=True,
     )
-    assert airbyte_stream == exp
+    assert exp == airbyte_stream
 
 
 def test_namespace_not_set():

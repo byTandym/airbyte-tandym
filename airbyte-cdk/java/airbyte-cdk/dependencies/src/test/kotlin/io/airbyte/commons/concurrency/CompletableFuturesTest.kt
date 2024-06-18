@@ -26,7 +26,8 @@ internal class CompletableFuturesTest {
 
         val allOfResult = CompletableFutures.allOf(futures).toCompletableFuture()
         val result = allOfResult.join()
-        val success = result.filter { obj: Either<out Exception, Int> -> obj.isRight() }
+        val success =
+            result.stream().filter { obj: Either<out Exception, Int> -> obj.isRight() }.toList()
         Assertions.assertEquals(
             success,
             Arrays.asList(
@@ -39,9 +40,10 @@ internal class CompletableFuturesTest {
         // Extract wrapped CompletionException messages.
         val failureMessages =
             result
+                .stream()
                 .filter { obj: Either<out Exception, Int> -> obj.isLeft() }
                 .map { either: Either<out Exception, Int> -> either.left!!.cause!!.message }
-
+                .toList()
         Assertions.assertEquals(failureMessages, mutableListOf("Fail 5", "Fail 6"))
     }
 

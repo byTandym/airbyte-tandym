@@ -1,109 +1,12 @@
 #
-# Copyright (c) 2024 Airbyte, Inc., all rights reserved.
+# Copyright (c) 2023 Airbyte, Inc., all rights reserved.
 #
 
 import pendulum
-from pytest import fixture
+import pytest
 
 
-@fixture
-def mock_opportunities_response():
-    return {
-        "data": [
-            {
-                "id": "test_id",
-                "name": "test_name",
-                "contact": "test_contact",
-                "headline": "test_headline",
-                "stage": "test_stage",
-                "confidentiality": "non-confidential",
-                "location": "test_location",
-                "phones": [{"type": "test_mobile", "value": "test_value"}],
-                "emails": ["test_emails"],
-                "links": ["test_link_1", "test_link_2"],
-                "archived": {"reason": "test_reason", "archivedAt": 1628513942512},
-                "tags": [],
-                "sources": ["test_source_1"],
-                "stageChanges": [{"toStageId": "test_lead-new", "toStageIndex": 0, "updatedAt": 1628509001183, "userId": "test_userId"}],
-                "origin": "test_origin",
-                "sourcedBy": "test_sourcedBy",
-                "owner": "test_owner",
-                "followers": ["test_follower"],
-                "applications": ["test_application"],
-                "createdAt": 1738509001183,
-                "updatedAt": 1738542849132,
-                "lastInteractionAt": 1738513942512,
-                "lastAdvancedAt": 1738513942512,
-                "snoozedUntil": None,
-                "urls": {"list": "https://hire.sandbox.lever.co/candidates", "show": "https://hire.sandbox.lever.co/candidates/test_show"},
-                "isAnonymized": False,
-                "dataProtection": None,
-            }
-        ],
-        "hasNext": False,
-        "next": "%5B1628543173558%2C%227bf8c1ac-4a68-450f-bea0-a1e2c3f5aeaf%22%5D",
-    }
-
-
-@fixture
-def mock_users_response():
-    return {
-        "data": [
-            {
-                "id": "fake_id",
-                "name": "fake_name",
-                "contact": "fake_contact",
-                "headline": "Airbyte",
-                "stage": "offer",
-                "confidentiality": "non-confidential",
-                "location": "Los Angeles, CA",
-                "origin": "referred",
-                "createdAt": 1628510997134,
-                "updatedAt": 1628542848755,
-                "isAnonymized": False,
-            },
-            {
-                "id": "fake_id_2",
-                "name": "fake_name_2",
-                "contact": "fake_contact_2",
-                "headline": "Airbyte",
-                "stage": "applicant-new",
-                "confidentiality": "non-confidential",
-                "location": "Los Angeles, CA",
-                "origin": "sourced",
-                "createdAt": 1628509001183,
-                "updatedAt": 1628542849132,
-                "isAnonymized": False,
-            },
-        ],
-        "hasNext": True,
-        "next": "%5B1628543173558%2C%227bf8c1ac-4a68-450f-bea0-a1e2c3f5aeaf%22%5D",
-    }
-
-
-@fixture
-def mock_users_response_no_next():
-    return {
-        "data": [
-            {
-                "id": "fake_id",
-                "name": "fake_name",
-                "contact": "fake_contact",
-                "headline": "Airbyte",
-                "stage": "offer",
-                "confidentiality": "non-confidential",
-                "location": "Los Angeles, CA",
-                "origin": "referred",
-                "createdAt": 1628510997134,
-                "updatedAt": 1628542848755,
-                "isAnonymized": False,
-            },
-        ],
-        "hasNext": False,
-    }
-
-
-@fixture
+@pytest.fixture()
 def url_base():
     """
     URL base for test
@@ -111,7 +14,7 @@ def url_base():
     return "https://test_domain.okta.com"
 
 
-@fixture
+@pytest.fixture()
 def api_url(url_base):
     """
     Just return API url based on url_base
@@ -119,7 +22,7 @@ def api_url(url_base):
     return f"{url_base}"
 
 
-@fixture
+@pytest.fixture()
 def oauth_config():
     """
     Credentials for oauth2.0 authorization
@@ -135,7 +38,7 @@ def oauth_config():
     }
 
 
-@fixture
+@pytest.fixture()
 def wrong_oauth_config_bad_credentials_record():
     """
     Malformed Credentials for oauth2.0 authorization
@@ -152,7 +55,7 @@ def wrong_oauth_config_bad_credentials_record():
     }
 
 
-@fixture
+@pytest.fixture()
 def wrong_oauth_config_bad_auth_type():
     """
     Wrong Credentials format for oauth2.0 authorization
@@ -168,7 +71,7 @@ def wrong_oauth_config_bad_auth_type():
     }
 
 
-@fixture
+@pytest.fixture()
 def token_config():
     """
     Just test 'token'
@@ -176,7 +79,7 @@ def token_config():
     return {"token": "test_token", "start_date": "2021-03-21T20:49:13Z"}
 
 
-@fixture
+@pytest.fixture()
 def auth_token_config():
     """
     Credentials for Token Authorization connect
@@ -184,13 +87,13 @@ def auth_token_config():
     return {"start_date": "2021-03-21T20:49:13Z", "credentials": {"auth_type": "api_token", "api_token": "test_token"}}
 
 
-@fixture
+@pytest.fixture()
 def user_status_filter():
     statuses = ["ACTIVE", "DEPROVISIONED", "LOCKED_OUT", "PASSWORD_EXPIRED", "PROVISIONED", "RECOVERY", "STAGED", "SUSPENDED"]
     return " or ".join([f'status eq "{status}"' for status in statuses])
 
 
-@fixture
+@pytest.fixture()
 def users_instance(api_url):
     """
     Users instance object response
@@ -222,7 +125,7 @@ def users_instance(api_url):
     }
 
 
-@fixture
+@pytest.fixture()
 def custom_role_instance(api_url):
     """
     Custom Role instance object response
@@ -241,7 +144,7 @@ def custom_role_instance(api_url):
     }
 
 
-@fixture
+@pytest.fixture()
 def permission_instance(api_url):
     """
     Custom Role instance object response
@@ -259,7 +162,7 @@ def permission_instance(api_url):
     }
 
 
-@fixture
+@pytest.fixture()
 def groups_instance(api_url):
     """
     Groups instance object response
@@ -284,7 +187,7 @@ def groups_instance(api_url):
     }
 
 
-@fixture
+@pytest.fixture()
 def group_members_instance(api_url):
     """
     Group Members instance object response
@@ -318,7 +221,7 @@ def group_members_instance(api_url):
     }
 
 
-@fixture
+@pytest.fixture()
 def group_role_assignments_instance():
     """
     Group Role Assignment instance object response
@@ -368,7 +271,7 @@ def group_role_assignments_instance():
     }
 
 
-@fixture
+@pytest.fixture()
 def user_role_assignments_instance(api_url):
     """
     User Role Assignment instance object response
@@ -387,7 +290,7 @@ def user_role_assignments_instance(api_url):
     }
 
 
-@fixture
+@pytest.fixture()
 def logs_instance():
     """
     Logs instance object response
@@ -478,7 +381,7 @@ def logs_instance():
     }
 
 
-@fixture
+@pytest.fixture()
 def resource_set_instance(api_url):
     """
     Resource set object instance
@@ -498,7 +401,7 @@ def resource_set_instance(api_url):
     }
 
 
-@fixture
+@pytest.fixture()
 def latest_record_instance(url_base, api_url):
     """
     Last Record instance object response
@@ -522,7 +425,7 @@ def latest_record_instance(url_base, api_url):
     }
 
 
-@fixture
+@pytest.fixture()
 def error_while_refreshing_access_token():
     """
     Error raised when using incorrect access token
@@ -530,7 +433,7 @@ def error_while_refreshing_access_token():
     return "Error while refreshing access token: 'access_token'"
 
 
-@fixture
+@pytest.fixture()
 def error_failed_to_authorize_with_provided_credentials():
     """
     Error raised when using incorrect oauth2.0 credentials
@@ -538,6 +441,6 @@ def error_failed_to_authorize_with_provided_credentials():
     return "Failed to authenticate with the provided credentials"
 
 
-@fixture
+@pytest.fixture()
 def start_date():
     return pendulum.parse("2021-03-21T20:49:13Z")

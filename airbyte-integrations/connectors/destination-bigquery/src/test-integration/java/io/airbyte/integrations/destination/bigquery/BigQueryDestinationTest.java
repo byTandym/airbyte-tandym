@@ -135,6 +135,12 @@ class BigQueryDestinationTest {
 
   private AmazonS3 s3Client;
 
+  /*
+   * TODO: Migrate all BigQuery Destination configs (GCS, Denormalized, Normalized) to no longer use
+   * #partitionIfUnpartitioned then recombine Base Provider. The reason for breaking this method into
+   * a base class is because #testWritePartitionOverUnpartitioned is no longer used only in GCS
+   * Staging
+   */
   private Stream<Arguments> successTestConfigProviderBase() {
     return Stream.of(
         Arguments.of("config"),
@@ -180,7 +186,7 @@ class BigQueryDestinationTest {
     // all successful configs use the same project ID
     projectId = config.get(BigQueryConsts.CONFIG_PROJECT_ID).asText();
 
-    // configWithProjectId - config that uses project:dataset notation for rawNamespace
+    // configWithProjectId - config that uses project:dataset notation for datasetId
     final String dataSetWithProjectId = String.format("%s:%s", projectId, datasetId);
     configWithProjectId = BigQueryDestinationTestUtils.createConfig(CREDENTIALS_STANDARD_INSERT_PATH, dataSetWithProjectId, stagingPath);
 

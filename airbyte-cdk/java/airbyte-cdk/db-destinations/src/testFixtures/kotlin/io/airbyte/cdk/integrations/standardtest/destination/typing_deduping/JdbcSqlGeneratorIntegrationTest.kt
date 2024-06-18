@@ -56,28 +56,34 @@ abstract class JdbcSqlGeneratorIntegrationTest<DestinationState : MinimumDestina
         var insert =
             dslContext.insertInto(
                 DSL.table(tableName),
-                columnNames.map { columnName: String -> DSL.field(DSL.quotedName(columnName)) }
+                columnNames
+                    .stream()
+                    .map { columnName: String? -> DSL.field(DSL.quotedName(columnName)) }
+                    .toList()
             )
         for (record in records) {
             insert =
                 insert.values(
-                    columnNames.map { fieldName: String ->
-                        // Convert this field to a string. Pretty naive implementation.
-                        val column = record[fieldName]
-                        val columnAsString =
-                            if (column == null) {
-                                null
-                            } else if (column.isTextual) {
-                                column.asText()
+                    columnNames
+                        .stream()
+                        .map { fieldName: String ->
+                            // Convert this field to a string. Pretty naive implementation.
+                            val column = record[fieldName]
+                            val columnAsString =
+                                if (column == null) {
+                                    null
+                                } else if (column.isTextual) {
+                                    column.asText()
+                                } else {
+                                    column.toString()
+                                }
+                            if (Arrays.asList(*columnsToParseJson).contains(fieldName)) {
+                                return@map toJsonValue(columnAsString)
                             } else {
-                                column.toString()
+                                return@map DSL.`val`(columnAsString)
                             }
-                        if (Arrays.asList(*columnsToParseJson).contains(fieldName)) {
-                            return@map toJsonValue(columnAsString)
-                        } else {
-                            return@map DSL.`val`(columnAsString)
                         }
-                    }
+                        .toList()
                 )
         }
         database.execute(insert.getSQL(ParamType.INLINED))
@@ -140,10 +146,8 @@ abstract class JdbcSqlGeneratorIntegrationTest<DestinationState : MinimumDestina
         includeCdcDeletedAt: Boolean,
         streamId: StreamId,
         suffix: String?,
-        records: List<JsonNode>,
-        generationId: Long,
+        records: List<JsonNode>
     ) {
-        // TODO handle generation ID
         val columnNames =
             if (includeCdcDeletedAt) FINAL_TABLE_COLUMN_NAMES_CDC else FINAL_TABLE_COLUMN_NAMES
         insertRecords(

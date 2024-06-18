@@ -4,8 +4,6 @@
 
 package io.airbyte.integrations.source.mongodb;
 
-import static io.airbyte.integrations.source.mongodb.state.IdType.idToStringRepresenation;
-import static io.airbyte.integrations.source.mongodb.state.IdType.parseBinaryIdString;
 import static io.airbyte.integrations.source.mongodb.state.InitialSnapshotStatus.IN_PROGRESS;
 
 import com.google.common.collect.AbstractIterator;
@@ -18,7 +16,12 @@ import io.airbyte.commons.util.AutoCloseableIterator;
 import io.airbyte.integrations.source.mongodb.state.IdType;
 import io.airbyte.integrations.source.mongodb.state.MongoDbStreamState;
 import java.util.Optional;
-import org.bson.*;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonInt64;
+import org.bson.BsonObjectId;
+import org.bson.BsonString;
+import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -82,8 +85,7 @@ public class MongoDbInitialLoadRecordIterator extends AbstractIterator<Document>
   private Optional<MongoDbStreamState> getCurrentState(Object currentId) {
     final var idType = IdType.findByJavaType(currentId.getClass().getSimpleName())
         .orElseThrow(() -> new ConfigErrorException("Unsupported _id type " + currentId.getClass().getSimpleName()));
-
-    final var state = new MongoDbStreamState(idToStringRepresenation(currentId, idType),
+    final var state = new MongoDbStreamState(currentId.toString(),
         IN_PROGRESS,
         idType);
     return Optional.of(state);
@@ -128,7 +130,6 @@ public class MongoDbInitialLoadRecordIterator extends AbstractIterator<Document>
             case OBJECT_ID -> new BsonObjectId(new ObjectId(state.id()));
             case INT -> new BsonInt32(Integer.parseInt(state.id()));
             case LONG -> new BsonInt64(Long.parseLong(state.id()));
-            case BINARY -> parseBinaryIdString(state.id());
             }))
         // if nothing was found, return a new BsonDocument
         .orElseGet(BsonDocument::new);

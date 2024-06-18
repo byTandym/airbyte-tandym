@@ -28,6 +28,7 @@ def test_request_params(patch_base_class):
     stream = AppsflyerStream()
     inputs = {"stream_slice": None, "stream_state": None, "next_page_token": None}
     expected_params = {
+        "api_token": "secret",
         "timezone": timezone,
         "maximum_rows": 1_000_000,
         "from": pendulum.yesterday(timezone).to_date_string(),
@@ -37,14 +38,14 @@ def test_request_params(patch_base_class):
 
 
 @pytest.mark.parametrize(
-    ("return_value", "expected_parsed_object"),
+    ("main_fields", "return_value", "expected_parsed_object"),
     [
-        ([b"Campaign (c),Date", b"c,d"], [{"campaign": "c", "date": "d"}]),
-        ([b"Date"], []),
+        (("a", "b"), [b"a,b", b"c,d"], [{"a": "c", "b": "d"}]),
+        (("a"), [b"a"], []),
     ],
 )
-def test_parse_response(patch_base_class, mocker, return_value, expected_parsed_object):
-    mocker.patch.object(AppsflyerStream, "primary_key", "test_primary_key")
+def test_parse_response(patch_base_class, mocker, main_fields, return_value, expected_parsed_object):
+    mocker.patch.object(AppsflyerStream, "main_fields", main_fields)
     stream = AppsflyerStream()
     response = MagicMock()
     response.iter_lines.return_value = return_value

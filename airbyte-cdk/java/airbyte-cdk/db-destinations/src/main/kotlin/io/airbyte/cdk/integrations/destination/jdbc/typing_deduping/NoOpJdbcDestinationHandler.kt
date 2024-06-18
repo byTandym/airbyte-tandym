@@ -44,10 +44,6 @@ class NoOpJdbcDestinationHandler<DestinationState>(
         throw NotImplementedError("This JDBC Destination Handler does not support typing deduping")
     }
 
-    override fun createNamespaces(schemas: Set<String>) {
-        // Empty op, not used in old code.
-    }
-
     override fun toJdbcTypeName(airbyteType: AirbyteType): String {
         throw NotImplementedError("This JDBC Destination Handler does not support typing deduping")
     }

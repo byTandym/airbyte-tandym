@@ -10,6 +10,7 @@ import io.airbyte.cdk.integrations.base.JavaBaseConstants
 import io.airbyte.commons.json.Jsons
 import io.airbyte.commons.util.MoreIterators
 import java.util.LinkedList
+import java.util.stream.Collectors
 
 class RootLevelFlatteningSheetGenerator(jsonSchema: JsonNode) :
     BaseSheetGenerator(), CsvSheetGenerator {
@@ -18,7 +19,9 @@ class RootLevelFlatteningSheetGenerator(jsonSchema: JsonNode) :
         MoreIterators.toList(
                 jsonSchema["properties"].fieldNames(),
             )
+            .stream()
             .sorted()
+            .collect(Collectors.toList())
 
     override fun getHeaderRow(): List<String> {
         val headers: MutableList<String> =

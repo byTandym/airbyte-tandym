@@ -68,19 +68,13 @@ class CsvSerializedBuffer(
     }
 
     @Throws(IOException::class)
-    override fun writeRecord(
-        recordString: String,
-        airbyteMetaString: String,
-        generationId: Long,
-        emittedAt: Long
-    ) {
+    override fun writeRecord(recordString: String, airbyteMetaString: String, emittedAt: Long) {
         csvPrinter!!.printRecord(
             csvSheetGenerator.getDataRow(
                 UUID.randomUUID(),
                 recordString,
                 emittedAt,
                 airbyteMetaString,
-                generationId,
             ),
         )
     }
@@ -130,6 +124,7 @@ class CsvSerializedBuffer(
                 val csvSheetGenerator =
                     CsvSheetGenerator.Factory.create(
                         catalog.streams
+                            .stream()
                             .filter { s: ConfiguredAirbyteStream ->
                                 s.stream.name == stream.name &&
                                     StringUtils.equals(
@@ -137,16 +132,18 @@ class CsvSerializedBuffer(
                                         stream.namespace,
                                     )
                             }
-                            .firstOrNull()
-                            ?.stream
-                            ?.jsonSchema
-                            ?: throw RuntimeException(
-                                String.format(
-                                    "No such stream %s.%s",
-                                    stream.namespace,
-                                    stream.name,
-                                ),
-                            ),
+                            .findFirst()
+                            .orElseThrow {
+                                RuntimeException(
+                                    String.format(
+                                        "No such stream %s.%s",
+                                        stream.namespace,
+                                        stream.name,
+                                    ),
+                                )
+                            }
+                            .stream
+                            .jsonSchema,
                         config,
                     )
                 val csvSettings =

@@ -51,7 +51,7 @@ public class MssqlQueryUtils {
 
   private static final String MAX_CURSOR_VALUE_QUERY =
       """
-        SELECT TOP 1 %s, COUNT(*) AS %s FROM %s WHERE %s = (SELECT MAX(%s) FROM %s) GROUP BY %s;
+        SELECT %s FROM %s WHERE %s = (SELECT MAX(%s) FROM %s);
       """;
   public static final String INDEX_QUERY = "EXEC sp_helpindex N'%s'";
 
@@ -200,16 +200,12 @@ public class MssqlQueryUtils {
       maybeCursorField.ifPresent(cursorField -> {
         LOGGER.info("Cursor {}. Querying max cursor value for {}.{}", cursorField, namespace, name);
         final String quotedCursorField = getIdentifierWithQuoting(cursorField, quoteString);
-        final String counterField = cursorField + "_count";
-        final String quotedCounterField = getIdentifierWithQuoting(counterField, quoteString);
         final String cursorBasedSyncStatusQuery = String.format(MAX_CURSOR_VALUE_QUERY,
             quotedCursorField,
-            quotedCounterField,
             fullTableName,
             quotedCursorField,
             quotedCursorField,
-            fullTableName,
-            quotedCursorField);
+            fullTableName);
         final List<JsonNode> jsonNodes;
         try {
           jsonNodes = database.bufferedResultSetQuery(conn -> conn.prepareStatement(cursorBasedSyncStatusQuery).executeQuery(),
@@ -221,7 +217,7 @@ public class MssqlQueryUtils {
         if (!jsonNodes.isEmpty()) {
           final JsonNode result = jsonNodes.get(0);
           cursorBasedStatus.setCursor(result.get(cursorField).asText());
-          cursorBasedStatus.setCursorRecordCount(result.get(counterField).asLong());
+          cursorBasedStatus.setCursorRecordCount((long) jsonNodes.size());
         }
         cursorBasedStatus.setStateType(StateType.CURSOR_BASED);
         cursorBasedStatus.setVersion(2L);

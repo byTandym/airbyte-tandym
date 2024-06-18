@@ -4,7 +4,8 @@
 
 from typing import List, Optional, Union
 
-from airbyte_cdk import AirbyteTracedException, FailureType
+from airbyte_cdk.models import FailureType
+from airbyte_cdk.utils.traced_exception import AirbyteTracedException
 
 from .source_files_abstract.file_info import FileInfo
 

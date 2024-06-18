@@ -6,8 +6,7 @@
 import sys
 
 from airbyte_cdk.entrypoint import launch
-
-from .source import SourceGainsightPx
+from source_gainsight_px import SourceGainsightPx
 
 
 def run():

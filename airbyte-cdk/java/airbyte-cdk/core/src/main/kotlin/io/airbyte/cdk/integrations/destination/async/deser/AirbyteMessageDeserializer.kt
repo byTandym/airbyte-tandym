@@ -6,9 +6,6 @@ package io.airbyte.cdk.integrations.destination.async.deser
 import io.airbyte.cdk.integrations.destination.async.model.PartialAirbyteMessage
 import io.airbyte.commons.json.Jsons
 import io.airbyte.protocol.models.v0.AirbyteMessage
-import io.github.oshai.kotlinlogging.KotlinLogging
-
-private val logger = KotlinLogging.logger {}
 
 class AirbyteMessageDeserializer(
     private val dataTransformer: StreamAwareDataTransformer = IdentityDataTransformer(),
@@ -56,8 +53,8 @@ class AirbyteMessageDeserializer(
             partial.record?.data = null
         } else if (AirbyteMessage.Type.STATE == msgType) {
             partial.withSerialized(message)
-        } else if (AirbyteMessage.Type.TRACE != msgType) {
-            logger.warn { "Unsupported message type: $msgType" }
+        } else {
+            throw RuntimeException(String.format("Unsupported message type: %s", msgType))
         }
 
         return partial

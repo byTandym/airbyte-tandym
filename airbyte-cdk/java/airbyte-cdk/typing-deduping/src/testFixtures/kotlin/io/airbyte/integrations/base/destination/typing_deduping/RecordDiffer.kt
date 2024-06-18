@@ -10,7 +10,6 @@ import com.google.common.collect.Streams
 import io.airbyte.commons.json.Jsons
 import java.math.BigDecimal
 import java.time.*
-import java.time.format.DateTimeParseException
 import java.util.*
 import java.util.function.Function
 import java.util.stream.Collectors
@@ -90,8 +89,14 @@ constructor(
     fun diffRawTableRecords(expectedRecords: List<JsonNode>, actualRecords: List<JsonNode>) {
         val diff =
             diffRecords(
-                expectedRecords.map { record: JsonNode -> this.deserializeMetaAndLiftData(record) },
-                actualRecords.map { record: JsonNode -> this.deserializeMetaAndLiftData(record) },
+                expectedRecords
+                    .stream()
+                    .map { record: JsonNode -> this.copyWithLiftedData(record) }
+                    .collect(Collectors.toList()),
+                actualRecords
+                    .stream()
+                    .map { record: JsonNode -> this.copyWithLiftedData(record) }
+                    .collect(Collectors.toList()),
                 rawRecordIdentityComparator,
                 rawRecordSortComparator,
                 rawRecordIdentityExtractor,
@@ -120,19 +125,19 @@ constructor(
     }
 
     /**
-     * If airbyte_data/airbyte_meta are strings, deserialize them. Then lift _airbyte_data fields to
-     * the root level.
+     * Lift _airbyte_data fields to the root level. If _airbyte_data is a string, deserialize it
+     * first.
      *
      * @return A copy of the record, but with all fields in _airbyte_data lifted to the top level.
      */
-    private fun deserializeMetaAndLiftData(record: JsonNode): JsonNode {
+    private fun copyWithLiftedData(record: JsonNode): JsonNode {
         val copy = record.deepCopy<ObjectNode>()
         copy.remove(getMetadataColumnName(rawRecordColumnNames, "_airbyte_data"))
         var airbyteData = record[getMetadataColumnName(rawRecordColumnNames, "_airbyte_data")]
         if (airbyteData.isTextual) {
             airbyteData = Jsons.deserializeExact(airbyteData.asText())
         }
-        Streams.stream(airbyteData.fields()).forEach { field: Map.Entry<String, JsonNode> ->
+        Streams.stream(airbyteData.fields()).forEach { field: Map.Entry<String, JsonNode?> ->
             if (!copy.has(field.key)) {
                 copy.set<JsonNode>(field.key, field.value)
             } else {
@@ -144,13 +149,6 @@ constructor(
                 )
             }
         }
-
-        val metadataColumnName = getMetadataColumnName(rawRecordColumnNames, "_airbyte_meta")
-        val airbyteMeta = record[metadataColumnName]
-        if (airbyteMeta != null && airbyteMeta.isTextual) {
-            copy.set<JsonNode>(metadataColumnName, Jsons.deserializeExact(airbyteMeta.asText()))
-        }
-
         return copy
     }
 
@@ -220,8 +218,8 @@ constructor(
         recordIdExtractor: Function<JsonNode, String>,
         columnNames: Map<String, String>
     ): String {
-        val expectedRecords = originalExpectedRecords.sortedWith(sortComparator)
-        val actualRecords = originalActualRecords.sortedWith(sortComparator)
+        val expectedRecords = originalExpectedRecords.stream().sorted(sortComparator).toList()
+        val actualRecords = originalActualRecords.stream().sorted(sortComparator).toList()
 
         // Iterate through both lists in parallel and compare each record.
         // Build up an error message listing any incorrect, missing, or unexpected records.
@@ -282,7 +280,7 @@ constructor(
             "Row had incorrect data: " + recordIdExtractor.apply(expectedRecord) + "\n"
         // Iterate through each column in the expected record and compare it to the actual record's
         // value.
-        for (column in Streams.stream<String>(expectedRecord.fieldNames()).sorted()) {
+        for (column in Streams.stream<String>(expectedRecord.fieldNames()).sorted().toList()) {
             // For all other columns, we can just compare their values directly.
             val expectedValue = expectedRecord[column]
             val actualValue = actualRecord[column]
@@ -322,7 +320,7 @@ constructor(
         columnNames: Map<String, String>
     ): LinkedHashMap<String, JsonNode> {
         val extraFields = LinkedHashMap<String, JsonNode>()
-        for (column in Streams.stream<String>(actualRecord.fieldNames()).sorted()) {
+        for (column in Streams.stream<String>(actualRecord.fieldNames()).sorted().toList()) {
             // loaded_at and raw_id are generated dynamically, so we just ignore them.
             val isLoadedAt = getMetadataColumnName(columnNames, "_airbyte_loaded_at") == column
             val isRawId = getMetadataColumnName(columnNames, "_airbyte_raw_id") == column
@@ -368,7 +366,7 @@ constructor(
                 expectedValue.size() == actualValue.size() &&
                     Stream.generate { expectedValue.fieldNames().next() }
                         .limit(expectedValue.size().toLong())
-                        .allMatch { field: String ->
+                        .allMatch { field: String? ->
                             areJsonNodesEquivalent(expectedValue[field], actualValue[field])
                         }
             } else {
@@ -442,16 +440,7 @@ constructor(
                 Instant.ofEpochMilli(Long.MIN_VALUE)
             } else {
                 try {
-                    OffsetDateTime.parse(node.asText()).toInstant()
-                } catch (parseE: DateTimeParseException) {
-                    // Fallback to using LocalDateTime and try again
-                    // Some databases have Timestamp_TZ mapped to TIMESTAMP with no offset,
-                    // this is sketchy to assume it as always UTC
-                    try {
-                        LocalDateTime.parse(node.asText()).toInstant(ZoneOffset.UTC)
-                    } catch (e: Exception) {
-                        Instant.ofEpochMilli(Long.MIN_VALUE)
-                    }
+                    Instant.parse(node.asText())
                 } catch (e: Exception) {
                     Instant.ofEpochMilli(Long.MIN_VALUE)
                 }

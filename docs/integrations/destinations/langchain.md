@@ -151,10 +151,7 @@ Please make sure that Docker Desktop has access to `/tmp` (and `/private` on a M
 
 <!-- /env:oss -->
 
-## Changelog
-
-<details>
-  <summary>Expand to review</summary>
+## CHANGELOG
 
 | Version | Date       | Pull Request                                              | Subject                                                                                                                      |
 | :------ | :--------- | :-------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------- |
@@ -169,5 +166,3 @@ Please make sure that Docker Desktop has access to `/tmp` (and `/private` on a M
 | 0.0.3   | 2023-07-20 | [#28509](https://github.com/airbytehq/airbyte/pull/28509) | Change the base image to python:3.9-slim to fix build                                                                        |
 | 0.0.2   | 2023-07-18 | [#26184](https://github.com/airbytehq/airbyte/pull/28398) | Adjust python dependencies and release on cloud                                                                              |
 | 0.0.1   | 2023-07-12 | [#26184](https://github.com/airbytehq/airbyte/pull/26184) | Initial release                                                                                                              |
-
-</details>

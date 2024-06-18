@@ -4,7 +4,6 @@
 
 package io.airbyte.integrations.source.mongodb.state;
 
-import static io.airbyte.integrations.source.mongodb.state.IdType.idToStringRepresenation;
 import static io.airbyte.integrations.source.mongodb.state.InitialSnapshotStatus.FULL_REFRESH;
 import static io.airbyte.integrations.source.mongodb.state.InitialSnapshotStatus.IN_PROGRESS;
 import static io.airbyte.protocol.models.v0.SyncMode.INCREMENTAL;
@@ -24,7 +23,11 @@ import io.airbyte.integrations.source.mongodb.cdc.MongoDbCdcState;
 import io.airbyte.protocol.models.v0.*;
 import io.airbyte.protocol.models.v0.AirbyteMessage.Type;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.bson.Document;
 import org.slf4j.Logger;
@@ -299,7 +302,7 @@ public class MongoDbStateManager implements SourceStateMessageProducer<Document>
         final var finalStateStatus = InitialSnapshotStatus.COMPLETE;
         final var idType = IdType.findByJavaType(lastId.getClass().getSimpleName())
             .orElseThrow(() -> new ConfigErrorException("Unsupported _id type " + lastId.getClass().getSimpleName()));
-        final var state = new MongoDbStreamState(idToStringRepresenation(lastId, idType), finalStateStatus, idType);
+        final var state = new MongoDbStreamState(lastId.toString(), finalStateStatus, idType);
 
         updateStreamState(stream.getStream().getName(), stream.getStream().getNamespace(), state);
       }

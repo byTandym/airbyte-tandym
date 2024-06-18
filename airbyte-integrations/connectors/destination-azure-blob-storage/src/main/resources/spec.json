@@ -78,12 +78,6 @@
                 "description": "Whether the input json data should be normalized (flattened) in the output CSV. Please refer to docs for details.",
                 "default": "No flattening",
                 "enum": ["No flattening", "Root level flattening"]
-              },
-              "file_extension": {
-                "title": "File Extension",
-                "type": "boolean",
-                "default": false,
-                "description": "Add file extensions to the output file."
               }
             }
           },
@@ -94,12 +88,6 @@
               "format_type": {
                 "type": "string",
                 "const": "JSONL"
-              },
-              "file_extension": {
-                "title": "File Extension",
-                "type": "boolean",
-                "default": false,
-                "description": "Add file extensions to the output file."
               }
             }
           }

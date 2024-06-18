@@ -13,10 +13,9 @@ import io.airbyte.cdk.integrations.destination.s3.csv.S3CsvWriter
 import io.airbyte.cdk.integrations.destination.s3.jsonl.S3JsonlWriter
 import io.airbyte.cdk.integrations.destination.s3.parquet.S3ParquetWriter
 import io.airbyte.protocol.models.v0.ConfiguredAirbyteStream
-import io.github.oshai.kotlinlogging.KotlinLogging
 import java.sql.Timestamp
-
-private val LOGGER = KotlinLogging.logger {}
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 class ProductionWriterFactory : S3WriterFactory {
     @Throws(Exception::class)
@@ -30,13 +29,13 @@ class ProductionWriterFactory : S3WriterFactory {
 
         if (format == FileUploadFormat.AVRO || format == FileUploadFormat.PARQUET) {
             val stream = configuredStream.stream
-            LOGGER.info { "Json schema for stream ${stream.name}: ${stream.jsonSchema}" }
+            LOGGER.info("Json schema for stream {}: {}", stream.name, stream.jsonSchema)
 
             val schemaConverter = JsonToAvroSchemaConverter()
             val avroSchema =
                 schemaConverter.getAvroSchema(stream.jsonSchema, stream.name, stream.namespace)
 
-            LOGGER.info { "Avro schema for stream ${stream.name}: ${avroSchema.toString(false)}" }
+            LOGGER.info("Avro schema for stream {}: {}", stream.name, avroSchema.toString(false))
 
             return if (format == FileUploadFormat.AVRO) {
                 S3AvroWriter(
@@ -70,5 +69,7 @@ class ProductionWriterFactory : S3WriterFactory {
         throw RuntimeException("Unexpected S3 destination format: $format")
     }
 
-    companion object {}
+    companion object {
+        protected val LOGGER: Logger = LoggerFactory.getLogger(ProductionWriterFactory::class.java)
+    }
 }

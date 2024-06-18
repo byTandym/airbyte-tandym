@@ -216,7 +216,7 @@ global:
     affinity: {}
 ```
 
-Amazon S3 Logging information is below but you can try to use `External Minio` as well but it was not
+GCS Logging information is below but you can try to use `External Minio` as well but it was not
 tested yet. Feel free to run tests and update the documentation.
 
 Add extra env variables to the following blocks:
@@ -298,11 +298,9 @@ Than run:
 
 ### External Logs with GCS
 
-:::info
-
+:::Info
 GCS Logging is similar to the approach taken for S3 above, with a few small differences
 GCS logging was tested on [Airbyte Helm Chart Version 0.54.69](https://artifacthub.io/packages/helm/airbyte/airbyte/0.54.69)
-
 :::
 
 #### Create Google Cloud Storage Bucket

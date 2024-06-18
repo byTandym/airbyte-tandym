@@ -12,6 +12,8 @@ import pytest
 import requests
 from airbyte_cdk.models import SyncMode
 from airbyte_cdk.sources.streams.http import HttpStream, HttpSubStream
+from airbyte_cdk.sources.streams.http.auth import NoAuth
+from airbyte_cdk.sources.streams.http.auth import TokenAuthenticator as HttpTokenAuthenticator
 from airbyte_cdk.sources.streams.http.exceptions import DefaultBackoffException, RequestBodyException, UserDefinedBackoffException
 from airbyte_cdk.sources.streams.http.requests_native_auth import TokenAuthenticator
 
@@ -42,12 +44,20 @@ class StubBasicReadHttpStream(HttpStream):
 
 def test_default_authenticator():
     stream = StubBasicReadHttpStream()
+    assert isinstance(stream.authenticator, NoAuth)
     assert stream._session.auth is None
 
 
 def test_requests_native_token_authenticator():
     stream = StubBasicReadHttpStream(authenticator=TokenAuthenticator("test-token"))
+    assert isinstance(stream.authenticator, NoAuth)
     assert isinstance(stream._session.auth, TokenAuthenticator)
+
+
+def test_http_token_authenticator():
+    stream = StubBasicReadHttpStream(authenticator=HttpTokenAuthenticator("test-token"))
+    assert isinstance(stream.authenticator, HttpTokenAuthenticator)
+    assert stream._session.auth is None
 
 
 def test_request_kwargs_used(mocker, requests_mock):
@@ -433,7 +443,7 @@ def test_using_cache(mocker, requests_mock):
 
     parent_stream = CacheHttpStreamWithSlices()
     mocker.patch.object(parent_stream, "url_base", "https://google.com/")
-    parent_stream._session.cache.clear()
+    parent_stream.clear_cache()
 
     assert requests_mock.call_count == 0
     assert len(parent_stream._session.cache.responses) == 0
@@ -621,5 +631,5 @@ def test_duplicate_request_params_are_deduped(deduplicate_query_params, path, pa
 
 
 def test_connection_pool():
-    stream = StubBasicReadHttpStream(authenticator=TokenAuthenticator("test-token"))
+    stream = StubBasicReadHttpStream(authenticator=HttpTokenAuthenticator("test-token"))
     assert stream._session.adapters["https://"]._pool_connections == 20

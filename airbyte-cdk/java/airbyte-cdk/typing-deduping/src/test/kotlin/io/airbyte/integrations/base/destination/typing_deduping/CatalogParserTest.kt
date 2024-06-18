@@ -10,6 +10,7 @@ import io.airbyte.protocol.models.v0.ConfiguredAirbyteCatalog
 import io.airbyte.protocol.models.v0.ConfiguredAirbyteStream
 import io.airbyte.protocol.models.v0.DestinationSyncMode
 import io.airbyte.protocol.models.v0.SyncMode
+import java.util.List
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.BeforeEach
@@ -45,7 +46,7 @@ internal class CatalogParserTest {
             StreamId(namespace, name, rawNamespace, namespace + "_abab_" + name, namespace, name)
         }
 
-        parser = CatalogParser(sqlGenerator, "default_namespace")
+        parser = CatalogParser(sqlGenerator)
     }
 
     /**
@@ -73,7 +74,7 @@ internal class CatalogParserTest {
         }
         val catalog =
             ConfiguredAirbyteCatalog()
-                .withStreams(listOf(stream("a", "foobarfoo"), stream("a", "foofoo")))
+                .withStreams(List.of(stream("a", "foobarfoo"), stream("a", "foofoo")))
 
         val parsedCatalog = parser.parseCatalog(catalog)
 
@@ -126,13 +127,13 @@ internal class CatalogParserTest {
                                               
                                               """.trimIndent()
             )
-        val catalog = ConfiguredAirbyteCatalog().withStreams(listOf(stream("a", "a", schema)))
+        val catalog = ConfiguredAirbyteCatalog().withStreams(List.of(stream("a", "a", schema)))
 
         val parsedCatalog = parser.parseCatalog(catalog)
-        val columnsList = parsedCatalog.streams[0].columns.keys.toList()
+        val columnsList = parsedCatalog.streams[0].columns!!.keys.toList()
 
         assertAll(
-            { Assertions.assertEquals(2, parsedCatalog.streams[0].columns.size) },
+            { Assertions.assertEquals(2, parsedCatalog.streams[0].columns!!.size) },
             { Assertions.assertEquals("foofoo", columnsList[0].name) },
             { Assertions.assertEquals("foofoo_1", columnsList[1].name) }
         )
@@ -167,31 +168,18 @@ internal class CatalogParserTest {
         val catalog = ConfiguredAirbyteCatalog().withStreams(listOf(stream("a", "a", schema)))
 
         val parsedCatalog = parser.parseCatalog(catalog)
-        val columnsList = parsedCatalog.streams[0].columns.keys.toList()
+        val columnsList = parsedCatalog.streams[0].columns!!.keys.toList()
 
         assertAll(
-            { Assertions.assertEquals(2, parsedCatalog.streams[0].columns.size) },
+            { Assertions.assertEquals(2, parsedCatalog.streams[0].columns!!.size) },
             { Assertions.assertEquals("aVeryLongC", columnsList[0].name) },
             { Assertions.assertEquals("aV36rd", columnsList[1].name) }
         )
     }
 
-    @Test
-    fun testDefaultNamespace() {
-        val catalog =
-            parser.parseCatalog(
-                ConfiguredAirbyteCatalog()
-                    .withStreams(
-                        listOf(stream(null, "a", Jsons.deserialize("""{"type": "object"}""")))
-                    )
-            )
-
-        Assertions.assertEquals("default_namespace", catalog.streams[0].id.originalNamespace)
-    }
-
     companion object {
         private fun stream(
-            namespace: String?,
+            namespace: String,
             name: String,
             schema: JsonNode =
                 Jsons.deserialize(
@@ -212,9 +200,6 @@ internal class CatalogParserTest {
                 )
                 .withSyncMode(SyncMode.INCREMENTAL)
                 .withDestinationSyncMode(DestinationSyncMode.APPEND)
-                .withGenerationId(0)
-                .withMinimumGenerationId(0)
-                .withSyncId(0)
         }
     }
 }

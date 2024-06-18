@@ -22,7 +22,4 @@ data:
     ql: 100
   supportLevel: community
   supportsRefreshes: true
-  connectorTestSuitesOptions:
-    - suite: unitTests
-    - suite: integrationTests
 metadataSpecVersion: "1.0"

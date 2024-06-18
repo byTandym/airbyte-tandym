@@ -13,6 +13,7 @@ import io.airbyte.commons.json.Jsons
 import io.airbyte.protocol.models.v0.AirbyteStreamNameNamespacePair
 import io.airbyte.protocol.models.v0.ConfiguredAirbyteCatalog
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.util.stream.Collectors
 import org.apache.commons.io.FileUtils
 
 private val log = KotlinLogging.logger {}
@@ -64,9 +65,10 @@ object SerialFlush {
             val message =
                 String.format(
                     "You are trying to write multiple streams to the same table. Consider switching to a custom namespace format using \${SOURCE_NAMESPACE}, or moving one of them into a separate connection with a different stream prefix. Affected streams: %s",
-                    conflictingStreams.joinToString(", ") { config: WriteConfig ->
-                        config.namespace + "." + config.streamName
-                    }
+                    conflictingStreams
+                        .stream()
+                        .map { config: WriteConfig -> config.namespace + "." + config.streamName }
+                        .collect(Collectors.joining(", "))
                 )
             throw ConfigErrorException(message)
         }
@@ -109,7 +111,7 @@ object SerialFlush {
                         database,
                         stageName,
                         stagingPath,
-                        listOf(stagedFile),
+                        java.util.List.of(stagedFile),
                         writeConfig.outputTableName,
                         schemaName,
                         stagingOperations,

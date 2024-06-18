@@ -2,10 +2,11 @@
 # Copyright (c) 2023 Airbyte, Inc., all rights reserved.
 #
 
-
+import io
 import json
 
 from google.cloud import storage
+from google.cloud.storage.blob import Blob
 from google.oauth2 import service_account
 
 
